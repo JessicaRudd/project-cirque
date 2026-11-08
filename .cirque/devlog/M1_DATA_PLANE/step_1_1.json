@@ -1,0 +1,59 @@
+{
+  "step_id": "STEP_1_1",
+  "milestone_id": "M1_DATA_PLANE",
+  "title": "Raw Data Harvester & Bounding Box Extractor",
+  "timestamp": "2026-11-08T23:38:00Z",
+  "status": "PASSED",
+  "resort": {
+    "id": "us_mt_big_sky",
+    "name": "Big Sky Resort",
+    "bbox": {
+      "south": 45.2300,
+      "west": -111.4700,
+      "north": 45.3200,
+      "east": -111.3400
+    },
+    "sub_zones": ["Mountain Village", "Lone Mountain", "Moonlight Basin", "Andesite", "Spanish Peaks"]
+  },
+  "metrics": {
+    "total_features": 27,
+    "pistes_count": 15,
+    "lifts_count": 7,
+    "amenities_count": 5,
+    "empty_difficulty_tags": 0,
+    "bbox_containment_rate": 1.0,
+    "geometry_types": {
+      "LineString": 22,
+      "Point": 5,
+      "Polygon": 0
+    }
+  },
+  "artifacts_created": [
+    "pipeline/fetch_ski_data.py",
+    "data/raw/big_sky_raw.geojson",
+    "tests/pipeline/test_fetch.py",
+    "requirements.txt",
+    ".gitignore",
+    ".cirque/devlog/M1_DATA_PLANE/step_1_1_snippet.py"
+  ],
+  "harness_execution": {
+    "name": "OSM Ingestion & Envelope Contract Harness",
+    "command": "pytest tests/pipeline/test_fetch.py -v",
+    "pass_criteria": "100% valid polygon/linestring geometries within Big Sky bounding box; 0 empty difficulty tags.",
+    "tests_total": 7,
+    "tests_passed": 7,
+    "tests_failed": 0,
+    "status": "PASSED"
+  },
+  "content_harvesting": {
+    "sublines": "Spatial Data Engineering: From OpenStreetMap Vectors to Offline Directed Graphs",
+    "artifacts_to_save": [
+      ".cirque/devlog/M1_DATA_PLANE/step_1_1_snippet.py"
+    ],
+    "talking_points": [
+      "Cleaning real-world OSM aerialway & piste tags: Why crowd-sourced data must pass contract gates before graph compilation",
+      "Handling malformed coordinates and summit boundary edge cases with epsilon-buffered envelopes",
+      "Eliminating the #1 failure mode in edge routing engines: zero empty difficulty tags guarantees predictable Dijkstra cost functions"
+    ]
+  }
+}

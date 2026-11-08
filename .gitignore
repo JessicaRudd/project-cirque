@@ -1,0 +1,46 @@
+# Dependencies & Node
+node_modules/
+dist/
+build/
+coverage/
+
+# Environment & Secrets
+.env*
+!.env.example
+*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+venv/
+.venv/
+env/
+
+# SQLite & Temp Spatial Artifacts
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+data/cache/
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.log
+
+# Swift & Xcode
+.build/
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+*.xcworkspace/*
+!*.xcworkspace/contents.xcworkspacedata
+DerivedData/

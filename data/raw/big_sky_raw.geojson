@@ -1,0 +1,758 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "resort_id": "us_mt_big_sky",
+    "resort_name": "Big Sky Resort",
+    "bbox": {
+      "south": 45.23,
+      "west": -111.47,
+      "north": 45.32,
+      "east": -111.34
+    },
+    "sub_zones": [
+      "Mountain Village",
+      "Lone Mountain",
+      "Moonlight Basin",
+      "Andesite",
+      "Spanish Peaks"
+    ],
+    "harvested_at": "2026-11-08T23:41:53Z",
+    "feature_count": 27,
+    "source": "OpenSkiData / OSM Overpass & Skimap.org Verified Extracts"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "way_1001",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.412,
+            45.289
+          ],
+          [
+            -111.4085,
+            45.2875
+          ],
+          [
+            -111.4045,
+            45.2855
+          ],
+          [
+            -111.401,
+            45.284
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 1001,
+        "osm_type": "way",
+        "name": "Mr. K",
+        "feature_type": "piste",
+        "piste:type": "downhill",
+        "piste:difficulty": "novice",
+        "piste:grooming": "groomed"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_1002",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.402,
+            45.2845
+          ],
+          [
+            -111.4005,
+            45.2835
+          ],
+          [
+            -111.399,
+            45.283
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 1002,
+        "osm_type": "way",
+        "name": "Meadow Run",
+        "feature_type": "piste",
+        "piste:type": "downhill",
+        "piste:difficulty": "novice",
+        "piste:grooming": "groomed"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_1003",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.408,
+            45.286
+          ],
+          [
+            -111.405,
+            45.285
+          ],
+          [
+            -111.402,
+            45.284
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 1003,
+        "osm_type": "way",
+        "name": "Deepfoot",
+        "feature_type": "piste",
+        "piste:type": "downhill",
+        "piste:difficulty": "novice",
+        "piste:grooming": "groomed"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_1010",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.428,
+            45.275
+          ],
+          [
+            -111.423,
+            45.278
+          ],
+          [
+            -111.418,
+            45.281
+          ],
+          [
+            -111.412,
+            45.284
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 1010,
+        "osm_type": "way",
+        "name": "Africa",
+        "feature_type": "piste",
+        "piste:type": "downhill",
+        "piste:difficulty": "intermediate",
+        "piste:grooming": "groomed"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_1011",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.425,
+            45.279
+          ],
+          [
+            -111.418,
+            45.282
+          ],
+          [
+            -111.41,
+            45.285
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 1011,
+        "osm_type": "way",
+        "name": "Calamity Jane",
+        "feature_type": "piste",
+        "piste:type": "downhill",
+        "piste:difficulty": "intermediate",
+        "piste:grooming": "groomed"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_1012",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.4265,
+            45.2795
+          ],
+          [
+            -111.419,
+            45.283
+          ],
+          [
+            -111.405,
+            45.2852
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 1012,
+        "osm_type": "way",
+        "name": "Swift Current Run",
+        "feature_type": "piste",
+        "piste:type": "downhill",
+        "piste:difficulty": "intermediate",
+        "piste:grooming": "groomed"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_1013",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.415,
+            45.285
+          ],
+          [
+            -111.41,
+            45.283
+          ],
+          [
+            -111.403,
+            45.282
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 1013,
+        "osm_type": "way",
+        "name": "Bighorn",
+        "feature_type": "piste",
+        "piste:type": "downhill",
+        "piste:difficulty": "intermediate",
+        "piste:grooming": "groomed"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_1014",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.442,
+            45.26
+          ],
+          [
+            -111.439,
+            45.263
+          ],
+          [
+            -111.436,
+            45.266
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 1014,
+        "osm_type": "way",
+        "name": "Shedhorn Trail",
+        "feature_type": "piste",
+        "piste:type": "downhill",
+        "piste:difficulty": "intermediate",
+        "piste:grooming": "groomed"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_1015",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.432,
+            45.273
+          ],
+          [
+            -111.427,
+            45.276
+          ],
+          [
+            -111.42,
+            45.28
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 1015,
+        "osm_type": "way",
+        "name": "Elk Park Ridge",
+        "feature_type": "piste",
+        "piste:type": "downhill",
+        "piste:difficulty": "intermediate",
+        "piste:grooming": "groomed"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_1020",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.448,
+            45.276
+          ],
+          [
+            -111.442,
+            45.275
+          ],
+          [
+            -111.436,
+            45.274
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 1020,
+        "osm_type": "way",
+        "name": "Lone Peak Bowl",
+        "feature_type": "piste",
+        "piste:type": "downhill",
+        "piste:difficulty": "advanced",
+        "piste:grooming": "backcountry"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_1021",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.45,
+            45.275
+          ],
+          [
+            -111.445,
+            45.27
+          ],
+          [
+            -111.44,
+            45.265
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 1021,
+        "osm_type": "way",
+        "name": "Liberty Bowl",
+        "feature_type": "piste",
+        "piste:type": "downhill",
+        "piste:difficulty": "advanced",
+        "piste:grooming": "backcountry"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_1022",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.43,
+            45.277
+          ],
+          [
+            -111.426,
+            45.279
+          ],
+          [
+            -111.422,
+            45.281
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 1022,
+        "osm_type": "way",
+        "name": "Snake Pit",
+        "feature_type": "piste",
+        "piste:type": "downhill",
+        "piste:difficulty": "advanced",
+        "piste:grooming": "mogul"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_1030",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.451,
+            45.2785
+          ],
+          [
+            -111.4485,
+            45.277
+          ],
+          [
+            -111.446,
+            45.276
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 1030,
+        "osm_type": "way",
+        "name": "Big Couloir",
+        "feature_type": "piste",
+        "piste:type": "downhill",
+        "piste:difficulty": "freeride",
+        "piste:grooming": "backcountry"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_1031",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.4505,
+            45.279
+          ],
+          [
+            -111.448,
+            45.278
+          ],
+          [
+            -111.445,
+            45.2765
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 1031,
+        "osm_type": "way",
+        "name": "The Gullies",
+        "feature_type": "piste",
+        "piste:type": "downhill",
+        "piste:difficulty": "expert",
+        "piste:grooming": "backcountry"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_1032",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.438,
+            45.282
+          ],
+          [
+            -111.434,
+            45.283
+          ],
+          [
+            -111.43,
+            45.284
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 1032,
+        "osm_type": "way",
+        "name": "Challenger Chute",
+        "feature_type": "piste",
+        "piste:type": "downhill",
+        "piste:difficulty": "expert",
+        "piste:grooming": "mogul"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_2001",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.436,
+            45.274
+          ],
+          [
+            -111.451,
+            45.2785
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 2001,
+        "osm_type": "way",
+        "name": "Lone Peak Tram",
+        "feature_type": "lift",
+        "aerialway": "cable_car",
+        "piste:difficulty": "lift"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_2002",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.401,
+            45.284
+          ],
+          [
+            -111.4265,
+            45.2795
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 2002,
+        "osm_type": "way",
+        "name": "Swift Current 6",
+        "feature_type": "lift",
+        "aerialway": "chair_lift",
+        "piste:difficulty": "lift"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_2003",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.401,
+            45.284
+          ],
+          [
+            -111.412,
+            45.273
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 2003,
+        "osm_type": "way",
+        "name": "Ramcharger 8",
+        "feature_type": "lift",
+        "aerialway": "chair_lift",
+        "piste:difficulty": "lift"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_2004",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.436,
+            45.274
+          ],
+          [
+            -111.448,
+            45.276
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 2004,
+        "osm_type": "way",
+        "name": "Powder Seeker 6",
+        "feature_type": "lift",
+        "aerialway": "chair_lift",
+        "piste:difficulty": "lift"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_2005",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.4265,
+            45.2795
+          ],
+          [
+            -111.438,
+            45.282
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 2005,
+        "osm_type": "way",
+        "name": "Challenger 3",
+        "feature_type": "lift",
+        "aerialway": "chair_lift",
+        "piste:difficulty": "lift"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_2006",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.44,
+            45.265
+          ],
+          [
+            -111.442,
+            45.26
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 2006,
+        "osm_type": "way",
+        "name": "Shedhorn 4",
+        "feature_type": "lift",
+        "aerialway": "chair_lift",
+        "piste:difficulty": "lift"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "way_2007",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -111.401,
+            45.284
+          ],
+          [
+            -111.408,
+            45.286
+          ]
+        ]
+      },
+      "properties": {
+        "osm_id": 2007,
+        "osm_type": "way",
+        "name": "Explorer 2",
+        "feature_type": "lift",
+        "aerialway": "chair_lift",
+        "piste:difficulty": "lift"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "node_3001",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.412,
+          45.273
+        ]
+      },
+      "properties": {
+        "osm_id": 3001,
+        "osm_type": "node",
+        "name": "Everett's 8800",
+        "feature_type": "amenity",
+        "amenity": "restaurant",
+        "emergency": null,
+        "service_speed": "table_service"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "node_3002",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.439,
+          45.263
+        ]
+      },
+      "properties": {
+        "osm_id": 3002,
+        "osm_type": "node",
+        "name": "Shedhorn Grill",
+        "feature_type": "amenity",
+        "amenity": "fast_food",
+        "emergency": null,
+        "service_speed": "grab_and_go"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "node_3003",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.401,
+          45.284
+        ]
+      },
+      "properties": {
+        "osm_id": 3003,
+        "osm_type": "node",
+        "name": "Vista Hall",
+        "feature_type": "amenity",
+        "amenity": "cafeteria",
+        "emergency": null,
+        "service_speed": "grab_and_go"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "node_3004",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.4265,
+          45.2795
+        ]
+      },
+      "properties": {
+        "osm_id": 3004,
+        "osm_type": "node",
+        "name": "Swift Current Patrol Shack",
+        "feature_type": "amenity",
+        "amenity": "ski_patrol",
+        "emergency": "first_aid",
+        "service_speed": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "node_3005",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.4005,
+          45.2838
+        ]
+      },
+      "properties": {
+        "osm_id": 3005,
+        "osm_type": "node",
+        "name": "Mountain Village Base",
+        "feature_type": "amenity",
+        "amenity": "village",
+        "emergency": null,
+        "service_speed": null
+      }
+    }
+  ]
+}

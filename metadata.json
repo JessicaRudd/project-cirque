@@ -1,0 +1,6 @@
+{
+  "name": "Project Cirque - Alpine Spatial Intelligence",
+  "description": "Offline-first spatial intelligence ski concierge and alpine data engineering orchestrator for Big Sky Resort.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
