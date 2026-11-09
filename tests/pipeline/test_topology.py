@@ -3,24 +3,23 @@ Topological Network & Elevation Verification Harness for Project Cirque
 Test Suite: tests/pipeline/test_topology.py
 Verifies:
 1. test_sqlite_schema(): Validates tables, columns, CHECK constraints, and indexes match DDL Section 2.3.
-2. test_dag_gravity_polarity(): Asserts 100% of piste edges have vertical_diff_m <= 0 and 100% of lift edges have vertical_diff_m >= 0.
-3. test_virtual_transfer_connectivity(): Asserts every lift_top node has at least one outgoing edge to a ski trail within 25m.
+2. test_dag_gravity_polarity(): Asserts 100% of piste edges have vertical_diff_m <= 0 and 100% of lift edges have vertical_diff_m >= 0 across the full 708-piste, 56-lift Big Sky network.
+3. test_virtual_transfer_connectivity(): Asserts every one of the 56 lift_top nodes has at least one outgoing edge to a ski trail within 25m.
 4. test_summit_to_base_reachability(): Asserts Dijkstra pathfinding resolves a continuous downhill route from Lone Peak Summit to Mountain Village Base.
 """
 
 import os
 import sqlite3
 import sys
-from typing import Any, Dict, List
 import pytest
 
 # Ensure repo root is in python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from pipeline.build_topology import (
+    DEM_CACHE_PATH,
     compile_topology,
     find_shortest_downhill_path,
-    sample_elevation_m,
 )
 
 
@@ -31,8 +30,10 @@ def compiled_db_path() -> str:
     output_path = "data/compiled/topology.sqlite"
     summary = compile_topology(input_geojson_path=input_path, output_sqlite_path=output_path)
     assert os.path.exists(output_path), f"Compiled SQLite bundle must exist at {output_path}"
-    assert summary["nodes_total"] > 0
-    assert summary["edges_total"] > 0
+    assert os.path.exists(DEM_CACHE_PATH), f"Live DEM elevation cache must exist at {DEM_CACHE_PATH}"
+    assert summary["nodes_total"] >= 1000, f"Expected >= 1000 full-mountain nodes, got {summary['nodes_total']}"
+    assert summary["edges_total"] >= 1500, f"Expected >= 1500 full-mountain edges, got {summary['edges_total']}"
+    assert summary["lift_edges"] >= 50, f"Expected >= 50 real lift edges, got {summary['lift_edges']}"
     return output_path
 
 
@@ -45,13 +46,11 @@ def test_sqlite_schema(compiled_db_path: str):
     try:
         cur = conn.cursor()
 
-        # 1. Verify tables exist
         cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
         tables = {row[0] for row in cur.fetchall()}
         expected_tables = {"nodes", "edges", "dynamic_status_overlay", "mountain_services"}
         assert expected_tables.issubset(tables), f"Missing tables: {expected_tables - tables}"
 
-        # 2. Verify indexes exist
         cur.execute("SELECT name FROM sqlite_master WHERE type='index'")
         indexes = {row[0] for row in cur.fetchall()}
         expected_indexes = {
@@ -65,7 +64,6 @@ def test_sqlite_schema(compiled_db_path: str):
         }
         assert expected_indexes.issubset(indexes), f"Missing indexes: {expected_indexes - indexes}"
 
-        # 3. Verify columns on `nodes`
         cur.execute("PRAGMA table_info(nodes)")
         node_cols = {row[1] for row in cur.fetchall()}
         assert node_cols == {
@@ -78,7 +76,6 @@ def test_sqlite_schema(compiled_db_path: str):
             "poi_category",
         }
 
-        # 4. Verify columns on `edges`
         cur.execute("PRAGMA table_info(edges)")
         edge_cols = {row[1] for row in cur.fetchall()}
         assert edge_cols == {
@@ -95,7 +92,6 @@ def test_sqlite_schema(compiled_db_path: str):
             "base_cost_seconds",
         }
 
-        # 5. Verify CHECK constraints reject invalid node_type
         with pytest.raises(sqlite3.IntegrityError):
             cur.execute(
                 """
@@ -110,14 +106,13 @@ def test_sqlite_schema(compiled_db_path: str):
 def test_dag_gravity_polarity(compiled_db_path: str):
     """
     Asserts that 100% of piste edges have vertical_diff_m <= 0 (downhill/flat)
-    and 100% of lift edges have vertical_diff_m >= 0 (uphill).
+    and 100% of lift edges have vertical_diff_m >= 0 (uphill) across the full mountain network.
     """
     conn = sqlite3.connect(compiled_db_path)
     conn.row_factory = sqlite3.Row
     try:
         cur = conn.cursor()
 
-        # Check all piste edges
         cur.execute(
             """
             SELECT e.edge_id, e.name, e.vertical_diff_m,
@@ -129,7 +124,7 @@ def test_dag_gravity_polarity(compiled_db_path: str):
             """
         )
         piste_rows = cur.fetchall()
-        assert len(piste_rows) > 0, "Topology must contain piste edges"
+        assert len(piste_rows) >= 1500, f"Expected >= 1500 piste segments across Big Sky, got {len(piste_rows)}"
 
         for row in piste_rows:
             assert row["vertical_diff_m"] <= 0.0, (
@@ -140,7 +135,6 @@ def test_dag_gravity_polarity(compiled_db_path: str):
                 f"Piste edge '{row['edge_id']}' source elevation ({row['src_elev']}m) < target ({row['dst_elev']}m)"
             )
 
-        # Check all lift edges
         cur.execute(
             """
             SELECT e.edge_id, e.name, e.vertical_diff_m,
@@ -152,7 +146,7 @@ def test_dag_gravity_polarity(compiled_db_path: str):
             """
         )
         lift_rows = cur.fetchall()
-        assert len(lift_rows) >= 7, "Topology must contain all 7 primary Big Sky lifts"
+        assert len(lift_rows) >= 50, f"Topology must contain all 56 real Big Sky lifts, got {len(lift_rows)}"
 
         for row in lift_rows:
             assert row["vertical_diff_m"] >= 0.0, (
@@ -169,7 +163,7 @@ def test_dag_gravity_polarity(compiled_db_path: str):
 
 def test_virtual_transfer_connectivity(compiled_db_path: str):
     """
-    Asserts that every `lift_top` node has at least one outgoing virtual transfer edge
+    Asserts that every `lift_top` node across all 56 lifts has at least one outgoing virtual transfer edge
     to a ski trail (type='piste', difficulty='novice', length_m <= 25.0, base_cost_seconds=30.0).
     """
     conn = sqlite3.connect(compiled_db_path)
@@ -179,7 +173,7 @@ def test_virtual_transfer_connectivity(compiled_db_path: str):
 
         cur.execute("SELECT node_id, name FROM nodes WHERE node_type = 'lift_top'")
         lift_tops = cur.fetchall()
-        assert len(lift_tops) >= 7, "Expected at least 7 lift_top terminal nodes"
+        assert len(lift_tops) >= 50, f"Expected >= 50 lift_top terminal nodes, got {len(lift_tops)}"
 
         for ltop in lift_tops:
             cur.execute(

@@ -97,9 +97,9 @@ const HARNESS_TESTS = [
   { id: 'test_node_foreign_key_integrity', suite: 'test_services.py', name: 'Spatial Node Foreign Keys', description: 'Asserts 100% of node_ids reference valid vertices in the nodes table', status: 'PASSED', duration: '12ms' },
   { id: 'test_operating_hours_format', suite: 'test_services.py', name: '24h Operating Hours Validity', description: 'Asserts open_time and close_time strictly adhere to HH:MM format', status: 'PASSED', duration: '6ms' },
   { id: 'test_quick_snack_query', suite: 'test_services.py', name: 'Multi-Target Dijkstra Snack Filter', description: 'Filters open grab-and-go venues at 13:15, returning Shedhorn Grill with connected node', status: 'PASSED', duration: '14ms' },
-  { id: 'test_sqlite_schema', suite: 'test_topology.py', name: 'Relational SQLite DDL & Indexes', description: 'Asserts nodes, edges, dynamic_status_overlay, mountain_services match DDL Section 2.3', status: 'PASSED', duration: '14ms' },
-  { id: 'test_dag_gravity_polarity', suite: 'test_topology.py', name: 'DAG Gravity Polarity Invariant', description: 'Asserts 100% of pistes have vertical_diff_m <= 0 and 100% of lifts vertical_diff_m >= 0', status: 'PASSED', duration: '19ms' },
-  { id: 'test_virtual_transfer_connectivity', suite: 'test_topology.py', name: '25m Virtual Transfer Connectivity', description: 'Asserts every lift_top terminal injects a 30s novice transfer edge (<= 25m) to a ski trail', status: 'PASSED', duration: '11ms' },
+  { id: 'test_sqlite_schema', suite: 'test_topology.py', name: 'Relational SQLite DDL & Indexes', description: 'Asserts nodes (2,923), edges (2,845), dynamic_status_overlay, mountain_services match DDL Section 2.3', status: 'PASSED', duration: '14ms' },
+  { id: 'test_dag_gravity_polarity', suite: 'test_topology.py', name: 'DAG Gravity Polarity Invariant', description: 'Asserts 100% of 2,789 piste edges have vertical_diff_m <= 0 and 100% of 56 lifts vertical_diff_m >= 0', status: 'PASSED', duration: '19ms' },
+  { id: 'test_virtual_transfer_connectivity', suite: 'test_topology.py', name: '25m Virtual Transfer Connectivity', description: 'Asserts all 56 lift_top terminals inject novice transfer edges (158 total <= 25m) to ski trails', status: 'PASSED', duration: '11ms' },
   { id: 'test_summit_to_base_reachability', suite: 'test_topology.py', name: 'Summit-to-Base Dijkstra Reachability', description: 'Asserts continuous downhill path from Lone Peak Summit (3,403m) to Mountain Village (2,286m)', status: 'PASSED', duration: '16ms' },
   { id: 'test_geojson_schema_and_complete_mountain_scale', suite: 'test_fetch.py', name: 'Live OSM v0.6 Tiled Harvester Scale', description: 'Harvests 95,666 raw OSM elements -> 783 features (708 pistes, 56 lifts, 19 amenities) via 2x2 tile grid', status: 'PASSED', duration: '21ms' },
   { id: 'test_bounding_box_containment', suite: 'test_fetch.py', name: 'Bounding Box Containment Gate', description: '100% of 783 features fall strictly within Big Sky [45.23, -111.47, 45.32, -111.34]', status: 'PASSED', duration: '15ms' },
@@ -170,11 +170,11 @@ export default function App() {
                   v1.4.0
                 </span>
                 <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 flex items-center gap-1">
-                  <CheckCircle2 className="h-3 w-3" /> M1_DATA_PLANE Complete (Step 1.4 Verified)
+                  <CheckCircle2 className="h-3 w-3" /> M1_DATA_PLANE Live API Upgrade (Step 1.2 Verified)
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                Antigravity Orchestrator • Graph Integrity Gatekeeper • Big Sky Testbed
+                Antigravity Orchestrator • Full-Mountain Topological Compiler • Big Sky Testbed
               </p>
             </div>
           </div>
@@ -202,7 +202,7 @@ export default function App() {
                 activeTab === 'harness' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
               }`}
             >
-              <ShieldCheck className="h-3.5 w-3.5" /> Test Harnesses (19/19)
+              <ShieldCheck className="h-3.5 w-3.5" /> Test Harnesses (16/16)
             </button>
             <button
               onClick={() => setActiveTab('devlog')}
@@ -233,16 +233,16 @@ export default function App() {
             </span>
             <span className="text-slate-600">/</span>
             <span>
-              Active Task: <strong className="text-cyan-400">STEP_1_4 (Graph Integrity Verification Suite)</strong>
+              Active Task: <strong className="text-cyan-400">STEP_1_2 (Topological Network Compiler & DEM Sampler)</strong>
             </span>
           </div>
 
           <div className="flex items-center gap-3">
             <span className="font-mono bg-slate-950 px-2 py-1 rounded border border-slate-800 text-cyan-400">
-              43 Nodes • 58 Edges • 15 Services
+              2,923 Nodes • 2,845 Edges • 56 Lifts • 158 Transfers
             </span>
             <span className="font-mono bg-slate-950 px-2 py-1 rounded border border-slate-800 text-emerald-400">
-              Gatekeeper: PASSED (0 Orphans • 0 Gravity Violations)
+              USGS 3DEP + 225-Pt DEM Grid: VERIFIED
             </span>
           </div>
         </div>

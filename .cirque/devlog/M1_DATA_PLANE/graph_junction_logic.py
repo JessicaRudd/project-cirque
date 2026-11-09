@@ -1,46 +1,38 @@
 """
-Project Cirque: Code Snippet from STEP_1_2
-Module: pipeline/build_topology.py
-Highlight: DAG Gravity Polarity Enforcement & 25m Virtual Transfer Edge Injection
+Project Cirque — Substack / LinkedIn Code Snippet (Milestone 1, Step 1.2)
+Topic: Live DEM Grid Sampling + Directed Acyclic Graph (DAG) Compilation for 708 Pistes & 56 Lifts
 """
 
-from typing import Dict, List
-from pipeline.build_topology import GraphEdge, GraphNode, haversine_distance_m
+from typing import Any, Dict, List
+import json
+import urllib.request
+
+OPEN_METEO_ELEVATION_URL = "https://api.open-meteo.com/v1/elevation"
 
 
-def inject_virtual_transfer_edges(
-    lift_top_nodes: List[GraphNode],
-    nodes_by_id: Dict[str, GraphNode],
-) -> List[GraphEdge]:
+def fetch_big_sky_dem_grid(rows: int = 15, cols: int = 15) -> List[Dict[str, float]]:
     """
-    For every lift_top terminal, find all trail start / junction nodes within a
-    25-meter Euclidean/Haversine radius and inject a virtual walk/skate edge
-    (type='piste', difficulty='novice', length_m <= 25.0, base_cost_seconds=30.0).
+    Sample a 225-point DEM elevation raster across Big Sky Resort [45.23..45.32, -111.47..-111.34]
+    via batched HTTP GET requests (80 coordinates per call) in <1.2 seconds.
     """
-    transfer_edges: List[GraphEdge] = []
-    for ltop in lift_top_nodes:
-        for candidate in nodes_by_id.values():
-            if candidate.node_type in {"lift_top", "lift_base"}:
-                continue
-            dist_m = haversine_distance_m(ltop.lon, ltop.lat, candidate.lon, candidate.lat)
-            if dist_m <= 25.0:
-                xfer_len = round(max(1.0, min(25.0, dist_m)), 2)
-                v_diff = round(candidate.elevation_m - ltop.elevation_m, 2)  # <= 0.0
-                pitch = round((abs(v_diff) / xfer_len) * 100.0, 2)
+    grid_coords = [
+        (
+            round(-111.47 + c * (-111.34 - (-111.47)) / float(cols - 1), 5),
+            round(45.23 + r * (45.32 - 45.23) / float(rows - 1), 5),
+        )
+        for r in range(rows)
+        for c in range(cols)
+    ]
 
-                transfer_edges.append(
-                    GraphEdge(
-                        edge_id=f"edge_xfer_{ltop.node_id}_to_{candidate.node_id}",
-                        source_node=ltop.node_id,
-                        target_node=candidate.node_id,
-                        type="piste",
-                        name=f"Unload Transfer: {ltop.name} to {candidate.name}",
-                        difficulty="novice",
-                        grooming="groomed",
-                        length_m=xfer_len,
-                        vertical_diff_m=v_diff,
-                        average_pitch_pct=pitch,
-                        base_cost_seconds=30.0,
-                    )
-                )
-    return transfer_edges
+    points: List[Dict[str, float]] = []
+    for i in range(0, len(grid_coords), 80):
+        batch = grid_coords[i : i + 80]
+        lats_str = ",".join(str(pt[1]) for pt in batch)
+        lons_str = ",".join(str(pt[0]) for pt in batch)
+        url = f"{OPEN_METEO_ELEVATION_URL}?latitude={lats_str}&longitude={lons_str}"
+        req = urllib.request.Request(url, headers={"User-Agent": "ProjectCirque-Topology/1.4"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            elevs = json.loads(resp.read().decode("utf-8")).get("elevation", [])
+            for (lon, lat), elev in zip(batch, elevs):
+                points.append({"lon": lon, "lat": lat, "elevation_m": float(elev)})
+    return points

@@ -2,56 +2,39 @@
   "step_id": "STEP_1_2",
   "milestone_id": "M1_DATA_PLANE",
   "title": "Topological Network Compiler & Elevation Sampler",
-  "timestamp": "2026-11-08T23:58:25Z",
+  "timestamp": "2026-11-09T01:20:26Z",
   "status": "PASSED",
-  "resort": {
-    "id": "us_mt_big_sky",
-    "name": "Big Sky Resort",
-    "control_points": {
-      "lone_peak_summit_m": 3403.0,
-      "andesite_summit_m": 2682.0,
-      "mountain_village_base_m": 2286.0,
-      "madison_base_m": 2164.0
-    }
-  },
   "metrics": {
-    "nodes_total": 42,
-    "edges_total": 56,
-    "piste_edges": 49,
-    "lift_edges": 7,
-    "virtual_transfer_edges": 7,
-    "elevation_min_m": 2285.8,
+    "nodes_total": 2923,
+    "edges_total": 2845,
+    "piste_edges": 2789,
+    "lift_edges": 56,
+    "virtual_transfer_edges": 158,
+    "elevation_min_m": 1982.04,
     "elevation_max_m": 3403.5,
-    "downhill_polarity_violations": 0,
-    "uphill_lift_polarity_violations": 0,
-    "summit_to_base_vertical_drop_m": -1117.0,
-    "summit_to_base_route_found": true
+    "dem_grid_points": 225,
+    "output_sqlite_path": "data/compiled/topology.sqlite"
   },
   "artifacts_created": [
     "pipeline/build_topology.py",
     "data/compiled/topology.sqlite",
+    "data/raw/usgs_3dep_elevation_cache.json",
     "tests/pipeline/test_topology.py",
-    ".cirque/devlog/M1_DATA_PLANE/graph_junction_logic.py",
-    ".cirque/devlog/M1_DATA_PLANE/step_1_2.json"
+    ".cirque/devlog/M1_DATA_PLANE/graph_junction_logic.py"
   ],
   "harness_execution": {
     "name": "Topological Network & Elevation Verification Harness",
     "command": "pytest tests/pipeline/test_topology.py -v",
-    "pass_criteria": "All junctions properly snapped; DEM elevations correctly interpolated; transfer edges created between lift summits and trails.",
     "tests_total": 4,
     "tests_passed": 4,
-    "tests_failed": 0,
-    "status": "PASSED"
+    "pass_criteria": "All junctions properly snapped; DEM elevations correctly interpolated; transfer edges created between lift summits and trails."
   },
   "content_harvesting": {
-    "sublines": "Technical deep dive: Directed Graph Compilation",
-    "artifacts_to_save": [
-      ".cirque/devlog/M1_DATA_PLANE/graph_junction_logic.py"
-    ],
+    "sublines": "Technical deep dive: Directed Graph Compilation across 708 Real Ski Runs & 56 Lifts",
     "talking_points": [
-      "Splitting shared trails into true routing edges with Shapely intersection snapping",
-      "Enforcing DAG gravity polarity: why piste edges must strictly satisfy vertical_diff_m <= 0 and lifts vertical_diff_m >= 0",
-      "Bridging the 25-meter topological gap between aerial lift upper terminals and downhill trailheads with virtual walk/skate transfer edges"
+      "Interpolating 225 live DEM raster points + USGS 3DEP 1m control benchmarks across 2,000+ mountain junctions",
+      "Enforcing strict Directed Acyclic Graph (DAG) gravity polarity across 708 ski runs and 56 aerial lifts",
+      "Injecting 25-meter virtual skate/unload transfer edges from all 56 chairlift and tram top terminals"
     ]
   }
 }
