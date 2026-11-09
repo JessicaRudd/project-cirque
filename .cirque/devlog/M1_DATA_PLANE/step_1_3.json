@@ -2,7 +2,7 @@
   "step_id": "STEP_1_3",
   "milestone_id": "M1_DATA_PLANE",
   "title": "On-Mountain Amenities & Services Ingestion",
-  "timestamp": "2026-11-09T00:46:16Z",
+  "timestamp": "2026-11-09T01:25:57Z",
   "status": "PASSED",
   "metrics": {
     "total_services": 15,
@@ -21,8 +21,8 @@
       "table_service": 2,
       "none": 9
     },
-    "average_snapping_distance_m": 0.45,
-    "max_snapping_distance_m": 6.8,
+    "average_snapping_distance_m": 1.32,
+    "max_snapping_distance_m": 12.99,
     "virtual_walk_edges_injected": 0,
     "all_snapped_within_25m_pass": true
   },
@@ -33,7 +33,7 @@
       "category": "quick_snack",
       "service_speed": "grab_and_go",
       "snapping_distance_m": 0.0,
-      "assigned_node_id": "node_jct_015"
+      "assigned_node_id": "node_jct_0011"
     },
     {
       "service_id": "srv_headwaters_grille",
@@ -48,8 +48,8 @@
       "name": "Uncle Dan's Cookie Hut",
       "category": "quick_snack",
       "service_speed": "grab_and_go",
-      "snapping_distance_m": 0.0,
-      "assigned_node_id": "node_jct_005"
+      "snapping_distance_m": 12.99,
+      "assigned_node_id": "node_village_mountain_village"
     },
     {
       "service_id": "srv_everetts_8800",
@@ -89,7 +89,7 @@
       "category": "patrol",
       "service_speed": null,
       "snapping_distance_m": 0.0,
-      "assigned_node_id": "node_jct_008"
+      "assigned_node_id": "node_jct_0006"
     },
     {
       "service_id": "srv_patrol_andesite",
@@ -105,7 +105,7 @@
       "category": "patrol",
       "service_speed": null,
       "snapping_distance_m": 0.0,
-      "assigned_node_id": "node_jct_015"
+      "assigned_node_id": "node_jct_0011"
     },
     {
       "service_id": "srv_patrol_village_base",
@@ -162,7 +162,7 @@
     "status": "PASSED"
   },
   "content_harvesting": {
-    "sublines": "Data modeling for spatial alpine services",
+    "sublines": "Data modeling for spatial alpine services on a 2,900-node graph",
     "artifacts_to_save": [
       ".cirque/devlog/M1_DATA_PLANE/step_1_3.json"
     ],

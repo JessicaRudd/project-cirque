@@ -202,7 +202,7 @@ export default function App() {
                 activeTab === 'harness' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
               }`}
             >
-              <ShieldCheck className="h-3.5 w-3.5" /> Test Harnesses (16/16)
+              <ShieldCheck className="h-3.5 w-3.5" /> Test Harnesses (20/20)
             </button>
             <button
               onClick={() => setActiveTab('devlog')}
@@ -233,16 +233,16 @@ export default function App() {
             </span>
             <span className="text-slate-600">/</span>
             <span>
-              Active Task: <strong className="text-cyan-400">STEP_1_2 (Topological Network Compiler & DEM Sampler)</strong>
+              Active Task: <strong className="text-cyan-400">STEP_1_3 & STEP_1_4 (Full Mountain Real Data Gatekeeper)</strong>
             </span>
           </div>
 
           <div className="flex items-center gap-3">
             <span className="font-mono bg-slate-950 px-2 py-1 rounded border border-slate-800 text-cyan-400">
-              2,923 Nodes • 2,845 Edges • 56 Lifts • 158 Transfers
+              2,911 Nodes • 2,847 Edges • 15 Services
             </span>
             <span className="font-mono bg-slate-950 px-2 py-1 rounded border border-slate-800 text-emerald-400">
-              USGS 3DEP + 225-Pt DEM Grid: VERIFIED
+              Gatekeeper: PASSED (0 Orphans • 0 Gravity Violations • 100% Base Reachability)
             </span>
           </div>
         </div>

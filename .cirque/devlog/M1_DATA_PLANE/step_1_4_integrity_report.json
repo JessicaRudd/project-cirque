@@ -2,112 +2,145 @@
   "step_id": "STEP_1_4",
   "milestone_id": "M1_DATA_PLANE",
   "title": "Graph Integrity Verification Suite",
-  "timestamp": "2026-11-09T00:46:16Z",
-  "total_nodes": 43,
-  "total_edges": 58,
+  "timestamp": "2026-11-09T01:25:57Z",
+  "total_nodes": 2911,
+  "total_edges": 2847,
   "total_services": 15,
-  "piste_count": 51,
-  "lift_count": 7,
+  "piste_count": 2791,
+  "lift_count": 56,
   "gravity_violations": 0,
   "orphan_edges": 0,
   "lift_top_dead_ends": 0,
   "isolated_services": 0,
   "reachable_base_nodes": [
-    "node_lift_base_2001",
-    "node_lift_base_2002",
-    "node_lift_base_2003",
-    "node_lift_base_2004",
-    "node_lift_base_2005",
-    "node_lift_base_2006",
-    "node_lift_base_2007",
+    "node_lift_base_1211485930",
+    "node_lift_base_1211485931",
+    "node_lift_base_1461424418",
+    "node_lift_base_257003835",
+    "node_lift_base_282577252",
+    "node_lift_base_5759657",
+    "node_lift_base_776586443",
+    "node_lift_base_843634522",
     "node_village_mountain_village"
   ],
   "summit_reachability_matrix": [
     {
       "origin_summit_id": "node_jct_001",
-      "origin_summit_name": "Mr. K Top",
-      "reached_base_node_id": "node_lift_base_2002",
+      "origin_summit_name": "Andesite Summit",
+      "reached_base_node_id": "node_lift_base_1211485930",
+      "reached_base_name": "Unnamed Way #1211485930 Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 4
+    },
+    {
+      "origin_summit_id": "node_jct_001",
+      "origin_summit_name": "Andesite Summit",
+      "reached_base_node_id": "node_lift_base_1211485931",
+      "reached_base_name": "Unnamed Way #1211485931 Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 4
+    },
+    {
+      "origin_summit_id": "node_jct_001",
+      "origin_summit_name": "Andesite Summit",
+      "reached_base_node_id": "node_lift_base_257003835",
+      "reached_base_name": "Unnamed Way #257003835 Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 4
+    },
+    {
+      "origin_summit_id": "node_jct_001",
+      "origin_summit_name": "Andesite Summit",
+      "reached_base_node_id": "node_lift_base_5759657",
+      "reached_base_name": "Ramcharger 8 - High Speed Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 4
+    },
+    {
+      "origin_summit_id": "node_jct_001",
+      "origin_summit_name": "Andesite Summit",
+      "reached_base_node_id": "node_lift_base_843634522",
       "reached_base_name": "Swift Current 6 Base Terminal",
       "reached_base_type": "lift_base",
       "min_hops": 4
     },
     {
       "origin_summit_id": "node_jct_001",
-      "origin_summit_name": "Mr. K Top",
-      "reached_base_node_id": "node_lift_base_2003",
-      "reached_base_name": "Ramcharger 8 Base Terminal",
-      "reached_base_type": "lift_base",
-      "min_hops": 4
-    },
-    {
-      "origin_summit_id": "node_jct_001",
-      "origin_summit_name": "Mr. K Top",
-      "reached_base_node_id": "node_lift_base_2007",
-      "reached_base_name": "Explorer 2 Base Terminal",
-      "reached_base_type": "lift_base",
-      "min_hops": 4
-    },
-    {
-      "origin_summit_id": "node_jct_001",
-      "origin_summit_name": "Mr. K Top",
+      "origin_summit_name": "Andesite Summit",
       "reached_base_node_id": "node_village_mountain_village",
       "reached_base_name": "Mountain Village Base",
       "reached_base_type": "village",
       "min_hops": 3
     },
     {
-      "origin_summit_id": "node_summit_lone_peak",
-      "origin_summit_name": "Lone Peak Summit",
-      "reached_base_node_id": "node_lift_base_2001",
-      "reached_base_name": "Lone Peak Tram Base Terminal",
+      "origin_summit_id": "node_lift_base_1461424418",
+      "origin_summit_name": "Andesite Point Base Terminal",
+      "reached_base_node_id": "node_lift_base_1461424418",
+      "reached_base_name": "Andesite Point Base Terminal",
       "reached_base_type": "lift_base",
-      "min_hops": 3
+      "min_hops": 0
+    },
+    {
+      "origin_summit_id": "node_lift_base_282577252",
+      "origin_summit_name": "Andesite Ridge Base Terminal",
+      "reached_base_node_id": "node_lift_base_282577252",
+      "reached_base_name": "Andesite Ridge Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 0
+    },
+    {
+      "origin_summit_id": "node_lift_base_776586443",
+      "origin_summit_name": "Andesite Point Base Terminal",
+      "reached_base_node_id": "node_lift_base_776586443",
+      "reached_base_name": "Andesite Point Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 0
+    },
+    {
+      "origin_summit_id": "node_lift_top_282577252",
+      "origin_summit_name": "Andesite Ridge Top Terminal",
+      "reached_base_node_id": "node_lift_base_282577252",
+      "reached_base_name": "Andesite Ridge Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 8
     },
     {
       "origin_summit_id": "node_summit_lone_peak",
       "origin_summit_name": "Lone Peak Summit",
-      "reached_base_node_id": "node_lift_base_2002",
+      "reached_base_node_id": "node_lift_base_1211485930",
+      "reached_base_name": "Unnamed Way #1211485930 Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 7
+    },
+    {
+      "origin_summit_id": "node_summit_lone_peak",
+      "origin_summit_name": "Lone Peak Summit",
+      "reached_base_node_id": "node_lift_base_1211485931",
+      "reached_base_name": "Unnamed Way #1211485931 Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 7
+    },
+    {
+      "origin_summit_id": "node_summit_lone_peak",
+      "origin_summit_name": "Lone Peak Summit",
+      "reached_base_node_id": "node_lift_base_257003835",
+      "reached_base_name": "Unnamed Way #257003835 Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 7
+    },
+    {
+      "origin_summit_id": "node_summit_lone_peak",
+      "origin_summit_name": "Lone Peak Summit",
+      "reached_base_node_id": "node_lift_base_5759657",
+      "reached_base_name": "Ramcharger 8 - High Speed Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 7
+    },
+    {
+      "origin_summit_id": "node_summit_lone_peak",
+      "origin_summit_name": "Lone Peak Summit",
+      "reached_base_node_id": "node_lift_base_843634522",
       "reached_base_name": "Swift Current 6 Base Terminal",
-      "reached_base_type": "lift_base",
-      "min_hops": 7
-    },
-    {
-      "origin_summit_id": "node_summit_lone_peak",
-      "origin_summit_name": "Lone Peak Summit",
-      "reached_base_node_id": "node_lift_base_2003",
-      "reached_base_name": "Ramcharger 8 Base Terminal",
-      "reached_base_type": "lift_base",
-      "min_hops": 7
-    },
-    {
-      "origin_summit_id": "node_summit_lone_peak",
-      "origin_summit_name": "Lone Peak Summit",
-      "reached_base_node_id": "node_lift_base_2004",
-      "reached_base_name": "Powder Seeker 6 Base Terminal",
-      "reached_base_type": "lift_base",
-      "min_hops": 3
-    },
-    {
-      "origin_summit_id": "node_summit_lone_peak",
-      "origin_summit_name": "Lone Peak Summit",
-      "reached_base_node_id": "node_lift_base_2005",
-      "reached_base_name": "Challenger 3 Base Terminal",
-      "reached_base_type": "lift_base",
-      "min_hops": 5
-    },
-    {
-      "origin_summit_id": "node_summit_lone_peak",
-      "origin_summit_name": "Lone Peak Summit",
-      "reached_base_node_id": "node_lift_base_2006",
-      "reached_base_name": "Shedhorn 4 Base Terminal",
-      "reached_base_type": "lift_base",
-      "min_hops": 5
-    },
-    {
-      "origin_summit_id": "node_summit_lone_peak",
-      "origin_summit_name": "Lone Peak Summit",
-      "reached_base_node_id": "node_lift_base_2007",
-      "reached_base_name": "Explorer 2 Base Terminal",
       "reached_base_type": "lift_base",
       "min_hops": 7
     },

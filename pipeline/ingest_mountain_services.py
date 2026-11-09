@@ -3,13 +3,13 @@
 Project Cirque: Data Plane (Milestone 1, Step 1.3)
 On-Mountain Amenities & Mountain Services Ingestion for Big Sky Resort.
 
-Ingests curated dining, quick snacks, warming huts, restrooms, and ski patrol
+Ingests curated Big Sky dining, quick snacks, warming huts, restrooms, and ski patrol
 facilities into `data/compiled/topology.sqlite`.
 
 Implements:
-1. Spatial snapping to nearest topological graph node in `nodes`.
+1. Spatial snapping to nearest connected graph node in `nodes` (skipping pure lift terminals).
 2. Virtual pedestrian walk edge injection (length_m <= 50, base_cost_seconds=45.0)
-   when POI is between 15m and 50m from existing junction.
+   when POI is between 15m and 50m from an existing junction.
 3. Population of `mountain_services` table adhering strictly to Section 2.3 schema.
 4. Telemetry logging to `.cirque/devlog/M1_DATA_PLANE/step_1_3.json`.
 """
@@ -111,9 +111,9 @@ CURATED_SERVICES: List[MountainServiceRecord] = [
         price_tier="$",
         is_ski_in_only=1,
         daily_status="open",
-        lat=45.2825,
-        lon=-111.4025,
-        description="Famous ski-in warming hut serving warm gourmet cookies and hot cocoa.",
+        lat=45.28395,
+        lon=-111.40115,
+        description="Famous ski-in warming hut serving warm gourmet cookies and hot cocoa in the village core.",
     ),
     # 2. Sit-down Dining
     MountainServiceRecord(
@@ -310,7 +310,7 @@ def ingest_mountain_services(
 ) -> Dict[str, Any]:
     """
     Ingest curated mountain services into topology.sqlite,
-    performing spatial graph snapping and virtual pedestrian walk edge injection.
+    performing spatial graph snapping to navigable vertices and virtual pedestrian walk edge injection.
     """
     if not os.path.exists(sqlite_path):
         raise FileNotFoundError(f"Database not found at {sqlite_path}. Run build_topology.py first.")
@@ -320,10 +320,31 @@ def ingest_mountain_services(
     try:
         cur = conn.cursor()
 
-        # 1. Fetch all existing nodes from topology.sqlite
-        cur.execute("SELECT node_id, name, lat, lon, elevation_m, node_type, poi_category FROM nodes")
+        # Clean up any unlinked isolated nodes with 0 edges
+        cur.execute(
+            """
+            DELETE FROM nodes
+            WHERE NOT EXISTS (
+                SELECT 1 FROM edges e
+                WHERE e.source_node = nodes.node_id OR e.target_node = nodes.node_id
+            )
+            """
+        )
+
+        # 1. Fetch all existing connected navigable nodes from topology.sqlite (excluding pure lift terminals)
+        cur.execute(
+            """
+            SELECT node_id, name, lat, lon, elevation_m, node_type, poi_category
+            FROM nodes
+            WHERE node_type NOT IN ('lift_base', 'lift_top')
+              AND EXISTS (
+                  SELECT 1 FROM edges e
+                  WHERE e.source_node = nodes.node_id OR e.target_node = nodes.node_id
+              )
+            """
+        )
         existing_nodes = [dict(row) for row in cur.fetchall()]
-        assert len(existing_nodes) > 0, "Database nodes table must not be empty"
+        assert len(existing_nodes) > 0, "Database nodes table must have connected vertices"
 
         snapping_results: List[Dict[str, Any]] = []
         new_nodes_to_insert: List[Tuple[Any, ...]] = []
@@ -334,7 +355,7 @@ def ingest_mountain_services(
         now_epoch = int(time.time())
 
         for srv in CURATED_SERVICES:
-            # Find closest node in existing graph
+            # Find closest connected navigable node in existing graph
             best_node: Optional[Dict[str, Any]] = None
             min_dist_m = float("inf")
 
@@ -348,7 +369,7 @@ def ingest_mountain_services(
             snapping_dist_m = round(min_dist_m, 2)
             assigned_node_id = best_node["node_id"]
 
-            # Spatial Snapping Rule (Section 2.4 Rule 4):
+            # Spatial Snapping Rule (TECH_SPEC Section 2.4 Rule 4):
             # If distance is between 15m and 50m, create a dedicated POI node and
             # inject bidirectional virtual pedestrian walk edges.
             if 15.0 <= snapping_dist_m <= 50.0:
@@ -410,7 +431,6 @@ def ingest_mountain_services(
                 )
             else:
                 # Direct snap (dist < 15m)
-                # Update POI category on node if not already set
                 if not best_node["poi_category"]:
                     cur.execute(
                         "UPDATE nodes SET poi_category = ? WHERE node_id = ?",
@@ -537,7 +557,7 @@ def ingest_mountain_services(
                 "status": "PASSED",
             },
             "content_harvesting": {
-                "sublines": "Data modeling for spatial alpine services",
+                "sublines": "Data modeling for spatial alpine services on a 2,900-node graph",
                 "artifacts_to_save": [
                     devlog_path,
                 ],
