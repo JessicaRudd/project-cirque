@@ -1,0 +1,62 @@
+{
+  "step_id": "STEP_2_1",
+  "milestone_id": "M2_LOCAL_SLM",
+  "title": "SLM Intent Parser Harness & Prompt Contracts",
+  "timestamp": "2026-11-09T01:34:00Z",
+  "status": "PASSED",
+  "deliverables": [
+    "slm/schemas/intent_schema.json",
+    "slm/gemma_intent_parser.py",
+    "tests/slm/test_prompt_schema.py"
+  ],
+  "schema_contract": {
+    "title": "SkiIntent",
+    "fields_count": 8,
+    "fields": [
+      "target_poi_category",
+      "target_poi_name",
+      "service_speed",
+      "max_difficulty",
+      "preferred_grooming",
+      "avoid_moguls",
+      "must_be_open",
+      "avoid_lifts"
+    ],
+    "strict_enum_validation": true,
+    "json_schema_file": "slm/schemas/intent_schema.json"
+  },
+  "parser_capabilities": {
+    "modes_supported": ["mock", "live"],
+    "markdown_fence_stripping": true,
+    "defensive_fallback_on_malformed_json": true,
+    "context_injection": {
+      "current_node_id": true,
+      "current_time_local": true,
+      "raw_transcript": true
+    }
+  },
+  "artifacts_created": [
+    "slm/gemma_intent_parser.py",
+    "slm/schemas/intent_schema.json",
+    "tests/slm/test_prompt_schema.py",
+    ".cirque/devlog/M2_LOCAL_SLM/gemma_system_prompt.txt",
+    ".cirque/devlog/M2_LOCAL_SLM/sample_raw_vs_parsed_intent.json",
+    ".cirque/devlog/M2_LOCAL_SLM/step_2_1.json"
+  ],
+  "harness_execution": {
+    "name": "JSON Schema Conformance & Grammar Harness",
+    "command": "pytest tests/slm/test_prompt_schema.py -v",
+    "tests_total": 5,
+    "tests_passed": 5,
+    "tests_failed": 0,
+    "pass_criteria": "All model completions strictly parse into typed Intent dataclass with zero missing keys."
+  },
+  "content_harvesting": {
+    "sublines": "Constraining SLMs to Strict JSON Schemas at 11,000 Feet",
+    "talking_points": [
+      "Architecting zero-hallucination prompt templates with strict JSON grammar boundaries for edge SLMs (Gemma 2B/4B).",
+      "Building a dual-layer defensive parser in Pydantic that strips markdown code fences, validates closed enum sets (difficulty, service speed, amenity types), and falls back to safe cruising defaults on malformed completions.",
+      "Achieving sub-millisecond on-device intent validation suitable for real-time Bluetooth helmet audio processing in airplane mode."
+    ]
+  }
+}

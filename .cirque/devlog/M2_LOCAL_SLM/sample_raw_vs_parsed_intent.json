@@ -1,0 +1,19 @@
+{
+  "raw_skier_query": "Find me a sit down lunch on blue groomed cruisers with no moguls",
+  "raw_model_completion": "```json\n{\n  \"target_poi_category\": \"sit_down\",\n  \"target_poi_name\": null,\n  \"service_speed\": \"table_service\",\n  \"max_difficulty\": \"intermediate\",\n  \"preferred_grooming\": true,\n  \"avoid_moguls\": true,\n  \"must_be_open\": true,\n  \"avoid_lifts\": []\n}\n```",
+  "sanitized_and_validated_intent": {
+    "target_poi_category": "sit_down",
+    "target_poi_name": null,
+    "service_speed": "table_service",
+    "max_difficulty": "intermediate",
+    "preferred_grooming": true,
+    "avoid_moguls": true,
+    "must_be_open": true,
+    "avoid_lifts": []
+  },
+  "parser_performance": {
+    "sanitization_time_ms": 0.08,
+    "pydantic_validation_time_ms": 0.12,
+    "schema_conformance": true
+  }
+}

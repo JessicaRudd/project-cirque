@@ -1,0 +1,90 @@
+{
+  "description": "Cirque On-Device Gemma SLM Routing Intent Schema",
+  "properties": {
+    "target_poi_category": {
+      "anyOf": [
+        {
+          "enum": [
+            "quick_snack",
+            "cafeteria",
+            "sit_down",
+            "bar",
+            "warming_hut",
+            "patrol",
+            "restroom"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Target Poi Category"
+    },
+    "target_poi_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Target Poi Name"
+    },
+    "service_speed": {
+      "anyOf": [
+        {
+          "enum": [
+            "grab_and_go",
+            "counter_service",
+            "table_service"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Service Speed"
+    },
+    "max_difficulty": {
+      "default": "advanced",
+      "enum": [
+        "novice",
+        "intermediate",
+        "advanced",
+        "expert"
+      ],
+      "title": "Max Difficulty",
+      "type": "string"
+    },
+    "preferred_grooming": {
+      "default": false,
+      "title": "Preferred Grooming",
+      "type": "boolean"
+    },
+    "avoid_moguls": {
+      "default": false,
+      "title": "Avoid Moguls",
+      "type": "boolean"
+    },
+    "must_be_open": {
+      "default": true,
+      "title": "Must Be Open",
+      "type": "boolean"
+    },
+    "avoid_lifts": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Avoid Lifts",
+      "type": "array"
+    }
+  },
+  "title": "SkiIntent",
+  "type": "object"
+}
