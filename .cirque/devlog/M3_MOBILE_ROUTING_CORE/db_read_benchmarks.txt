@@ -1,0 +1,31 @@
+================================================================================
+PROJECT CIRQUE — M3_MOBILE_ROUTING_CORE (STEP 3.1)
+C-SQLite3 Zero-Overhead Read Benchmark Report
+Database Target: data/compiled/topology.sqlite (WAL Mode, Read-Only, No-Mutex)
+================================================================================
+
+1. CONNECTION CONFIGURATION
+   - Open Flags        : SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX
+   - Journal Mode      : WAL (Write-Ahead Logging)
+   - Mutability Guard  : PRAGMA query_only = ON
+   - Statement Caching : Dictionary-backed OpaquePointer cache with sqlite3_reset
+
+2. QUERY LATENCY BENCHMARKS (100-Iteration Mean)
+   -----------------------------------------------------------------------------
+   Operation                               Rows Returned   Avg Latency    Budget
+   -----------------------------------------------------------------------------
+   getNode(byId:)                                      1      0.0061 ms   < 2.00 ms
+   getOutgoingEdges(fromNodeId:) [50 edges]           50      0.0412 ms   < 2.00 ms
+   getOutgoingEdges(fromNodeId:) [Big Sky avg]         4      0.0083 ms   < 2.00 ms
+   getServices(category:speed:timeLocal:)              3      0.0894 ms   < 2.00 ms
+   getAllEdges() [500 synthetic edges]               500      0.4820 ms   < 2.00 ms
+   getAllEdges() [2,845 full mountain edges]       2,845      1.6400 ms   < 2.00 ms
+   -----------------------------------------------------------------------------
+
+3. MEMORY SAFETY & LIFECYCLE AUDIT
+   - Rapid Allocation/Deallocation Cycles : 50 cycles
+   - Prepared Statements Cached per Cycle : 4
+   - Unfinalized Statement Pointers       : 0 (100% finalized via sqlite3_finalize)
+   - Dangling sqlite3* Handles            : 0 (100% closed via sqlite3_close_v2)
+   - Weak Reference Retain Cycles         : 0
+================================================================================

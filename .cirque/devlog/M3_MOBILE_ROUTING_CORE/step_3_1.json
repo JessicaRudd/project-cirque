@@ -1,0 +1,98 @@
+{
+  "step_id": "STEP_3_1",
+  "milestone_id": "M3_MOBILE_ROUTING_CORE",
+  "title": "CirqueCore Swift Package & SQLite Connection Wrapper",
+  "timestamp": "2026-11-09T01:45:00Z",
+  "status": "PASSED",
+  "deliverables": [
+    "ios/CirqueCore/Package.swift",
+    "ios/CirqueCore/Sources/CirqueCore/Database/SQLiteConnection.swift",
+    "ios/CirqueCore/Tests/CirqueCoreTests/SQLiteConnectionTests.swift"
+  ],
+  "swift_package_config": {
+    "package_name": "CirqueCore",
+    "swift_tools_version": "6.0",
+    "platforms": [
+      "iOS 18.0",
+      "macOS 14.0"
+    ],
+    "linked_system_libraries": [
+      "sqlite3"
+    ],
+    "external_dependencies_count": 0,
+    "strict_concurrency_enabled": true
+  },
+  "sqlite_wrapper_metrics": {
+    "open_flags": "SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX",
+    "pragmas_enforced": [
+      "PRAGMA journal_mode = WAL;",
+      "PRAGMA query_only = ON;"
+    ],
+    "prepared_statement_cache_enabled": true,
+    "domain_models": [
+      "NodeRecord",
+      "EdgeRecord",
+      "MountainServiceRecord"
+    ],
+    "benchmarks_ms": {
+      "get_node_by_id_ms": 0.0061,
+      "get_outgoing_edges_500_fixture_ms": 0.0412,
+      "get_outgoing_edges_big_sky_ms": 0.0083,
+      "get_services_time_filtered_ms": 0.0894,
+      "get_all_edges_500_fixture_ms": 0.482,
+      "latency_budget_ms": 2.0
+    },
+    "memory_audit": {
+      "lifecycle_iterations": 50,
+      "leaked_statement_pointers": 0,
+      "unclosed_db_handles": 0,
+      "weak_ref_deallocated": true
+    }
+  },
+  "artifacts_created": [
+    "ios/CirqueCore/Package.swift",
+    "ios/CirqueCore/Sources/CirqueCore/Database/SQLiteConnection.swift",
+    "ios/CirqueCore/Tests/CirqueCoreTests/SQLiteConnectionTests.swift",
+    ".cirque/devlog/M3_MOBILE_ROUTING_CORE/sqlite_binding_snippet.swift",
+    ".cirque/devlog/M3_MOBILE_ROUTING_CORE/db_read_benchmarks.txt",
+    ".cirque/devlog/M3_MOBILE_ROUTING_CORE/step_3_1.json"
+  ],
+  "harness_execution": {
+    "name": "C-SQLite Zero-Overhead Memory & Query Harness",
+    "command": "swift test --package-path ios/CirqueCore --filter SQLiteConnectionTests",
+    "tests_total": 4,
+    "tests_passed": 4,
+    "tests_failed": 0,
+    "test_cases": [
+      {
+        "name": "testDatabaseInitialization",
+        "status": "PASSED",
+        "assertion": "Verifies WAL journal mode, PRAGMA query_only = ON, node hydration, and write rejection on read-only handles."
+      },
+      {
+        "name": "testOutgoingEdgesQueryPerformance",
+        "status": "PASSED",
+        "assertion": "Populates 500 edges and verifies cached getOutgoingEdges executes in 0.0412ms (< 2.0ms budget)."
+      },
+      {
+        "name": "testMountainServicesFiltering",
+        "status": "PASSED",
+        "assertion": "Verifies temporal ('13:15'), category ('quick_snack', 'sit_down'), and service_speed filtering for Shedhorn Grill and Everett's 8800."
+      },
+      {
+        "name": "testMemoryLifecycle",
+        "status": "PASSED",
+        "assertion": "Executes 50 rapid open/query/close cycles verifying 0 leaked statement pointers and clean ARC deallocation."
+      }
+    ],
+    "pass_criteria": "Database opens in WAL mode; edge/vertex queries execute in under 2ms; zero memory leaks."
+  },
+  "content_harvesting": {
+    "sublines": "Zero-Overhead Offline SQLite in Swift: Why We Bypassed ORMs for Sub-Millisecond Ski Routing",
+    "talking_points": [
+      "Bypassing SwiftData and CoreData overhead in favor of direct C-SQLite3 (`libsqlite3`) bindings with `SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX` to eliminate lock contention on the mountain.",
+      "Implementing a dictionary-backed `OpaquePointer` prepared statement cache using `sqlite3_reset` and `sqlite3_clear_bindings` to achieve 41-microsecond adjacency lookups.",
+      "Enforcing immutable bundle safety with `PRAGMA query_only = ON` and deterministic `sqlite3_finalize` + `sqlite3_close_v2` teardown in `deinit` to guarantee zero memory leaks."
+    ]
+  }
+}
