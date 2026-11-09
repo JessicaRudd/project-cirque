@@ -1,0 +1,175 @@
+{
+  "step_id": "STEP_1_3",
+  "milestone_id": "M1_DATA_PLANE",
+  "title": "On-Mountain Amenities & Services Ingestion",
+  "timestamp": "2026-11-09T00:35:55Z",
+  "status": "PASSED",
+  "metrics": {
+    "total_services": 15,
+    "categories_breakdown": {
+      "quick_snack": 3,
+      "sit_down": 1,
+      "cafeteria": 1,
+      "bar": 1,
+      "patrol": 5,
+      "warming_hut": 2,
+      "restroom": 2
+    },
+    "service_speed_breakdown": {
+      "grab_and_go": 2,
+      "counter_service": 2,
+      "table_service": 2,
+      "none": 9
+    },
+    "average_snapping_distance_m": 1.79,
+    "max_snapping_distance_m": 20.12,
+    "virtual_walk_edges_injected": 2,
+    "all_snapped_within_25m_pass": true
+  },
+  "services_ingested": [
+    {
+      "service_id": "srv_shedhorn_grill",
+      "name": "Shedhorn Grill",
+      "category": "quick_snack",
+      "service_speed": "grab_and_go",
+      "snapping_distance_m": 0.0,
+      "assigned_node_id": "node_jct_015"
+    },
+    {
+      "service_id": "srv_headwaters_grille",
+      "name": "Headwaters Grille",
+      "category": "quick_snack",
+      "service_speed": "counter_service",
+      "snapping_distance_m": 20.12,
+      "assigned_node_id": "node_poi_srv_headwaters_grille"
+    },
+    {
+      "service_id": "srv_uncle_dans_cookies",
+      "name": "Uncle Dan's Cookie Hut",
+      "category": "quick_snack",
+      "service_speed": "grab_and_go",
+      "snapping_distance_m": 0.0,
+      "assigned_node_id": "node_jct_005"
+    },
+    {
+      "service_id": "srv_everetts_8800",
+      "name": "Everett's 8800",
+      "category": "sit_down",
+      "service_speed": "table_service",
+      "snapping_distance_m": 0.0,
+      "assigned_node_id": "node_jct_001"
+    },
+    {
+      "service_id": "srv_vista_hall",
+      "name": "Vista Hall",
+      "category": "cafeteria",
+      "service_speed": "counter_service",
+      "snapping_distance_m": 0.0,
+      "assigned_node_id": "node_village_mountain_village"
+    },
+    {
+      "service_id": "srv_montana_jack",
+      "name": "Montana Jack",
+      "category": "bar",
+      "service_speed": "table_service",
+      "snapping_distance_m": 6.8,
+      "assigned_node_id": "node_village_mountain_village"
+    },
+    {
+      "service_id": "srv_patrol_summit",
+      "name": "Lone Peak Summit Patrol Shack",
+      "category": "patrol",
+      "service_speed": null,
+      "snapping_distance_m": 0.0,
+      "assigned_node_id": "node_summit_lone_peak"
+    },
+    {
+      "service_id": "srv_patrol_swift_current",
+      "name": "Swift Current Patrol Shack",
+      "category": "patrol",
+      "service_speed": null,
+      "snapping_distance_m": 0.0,
+      "assigned_node_id": "node_jct_008"
+    },
+    {
+      "service_id": "srv_patrol_andesite",
+      "name": "Andesite Summit Patrol Station",
+      "category": "patrol",
+      "service_speed": null,
+      "snapping_distance_m": 0.0,
+      "assigned_node_id": "node_jct_001"
+    },
+    {
+      "service_id": "srv_patrol_shedhorn",
+      "name": "Shedhorn Patrol Shack",
+      "category": "patrol",
+      "service_speed": null,
+      "snapping_distance_m": 0.0,
+      "assigned_node_id": "node_jct_015"
+    },
+    {
+      "service_id": "srv_patrol_village_base",
+      "name": "Mountain Village Ski Patrol Base",
+      "category": "patrol",
+      "service_speed": null,
+      "snapping_distance_m": 0.0,
+      "assigned_node_id": "node_village_mountain_village"
+    },
+    {
+      "service_id": "srv_warming_hut_andesite",
+      "name": "Andesite Summit Warming Hut",
+      "category": "warming_hut",
+      "service_speed": null,
+      "snapping_distance_m": 0.0,
+      "assigned_node_id": "node_jct_001"
+    },
+    {
+      "service_id": "srv_warming_hut_village",
+      "name": "Mountain Village Warming Center",
+      "category": "warming_hut",
+      "service_speed": null,
+      "snapping_distance_m": 0.0,
+      "assigned_node_id": "node_village_mountain_village"
+    },
+    {
+      "service_id": "srv_restroom_village",
+      "name": "Mountain Village Public Restrooms",
+      "category": "restroom",
+      "service_speed": null,
+      "snapping_distance_m": 0.0,
+      "assigned_node_id": "node_village_mountain_village"
+    },
+    {
+      "service_id": "srv_restroom_andesite",
+      "name": "Andesite Top Restrooms",
+      "category": "restroom",
+      "service_speed": null,
+      "snapping_distance_m": 0.0,
+      "assigned_node_id": "node_jct_001"
+    }
+  ],
+  "artifacts_created": [
+    "pipeline/ingest_mountain_services.py",
+    "tests/pipeline/test_services.py",
+    ".cirque/devlog/M1_DATA_PLANE/step_1_3.json"
+  ],
+  "harness_execution": {
+    "name": "Amenity Junction Snapping & Operating Hours Harness",
+    "command": "pytest tests/pipeline/test_services.py -v",
+    "pass_criteria": "All dining and patrol points of interest snap to existing graph vertices within a 25-meter radius.",
+    "tests_total": 4,
+    "tests_passed": 4,
+    "status": "PASSED"
+  },
+  "content_harvesting": {
+    "sublines": "Data modeling for spatial alpine services",
+    "artifacts_to_save": [
+      ".cirque/devlog/M1_DATA_PLANE/step_1_3.json"
+    ],
+    "talking_points": [
+      "Snapping real-world POIs to nearest navigable network vertices without distorting Dijkstra weights",
+      "Structuring time-gated amenities for lunch, warming huts, and ski patrol emergency routing",
+      "Bridging the 15m-50m gap with bidirectional virtual pedestrian walk edges"
+    ]
+  }
+}
