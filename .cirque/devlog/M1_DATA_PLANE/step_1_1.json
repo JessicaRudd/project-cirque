@@ -2,58 +2,88 @@
   "step_id": "STEP_1_1",
   "milestone_id": "M1_DATA_PLANE",
   "title": "Raw Data Harvester & Bounding Box Extractor",
-  "timestamp": "2026-11-08T23:38:00Z",
+  "timestamp": "2026-11-09T01:11:02Z",
   "status": "PASSED",
   "resort": {
     "id": "us_mt_big_sky",
-    "name": "Big Sky Resort",
+    "name": "Big Sky Resort, Montana",
     "bbox": {
-      "south": 45.2300,
-      "west": -111.4700,
-      "north": 45.3200,
-      "east": -111.3400
+      "south": 45.23,
+      "west": -111.47,
+      "north": 45.32,
+      "east": -111.34
     },
-    "sub_zones": ["Mountain Village", "Lone Mountain", "Moonlight Basin", "Andesite", "Spanish Peaks"]
+    "sub_zones": [
+      "Mountain Village",
+      "Lone Mountain",
+      "Moonlight Basin",
+      "Andesite",
+      "Spanish Peaks"
+    ],
+    "boundary_reference": {
+      "resort_id": "us_mt_big_sky",
+      "skimap_area_id": 515,
+      "sub_zones": [
+        "Mountain Village",
+        "Lone Mountain",
+        "Moonlight Basin",
+        "Andesite",
+        "Spanish Peaks"
+      ],
+      "nominatim_verified": true,
+      "osm_boundary_way_id": 1254863688,
+      "osm_boundary_type": "way",
+      "display_name": "Big Sky Resort, Big Sky, Madison County, Montana, United States",
+      "official_osm_bbox": [
+        45.2469805,
+        45.3148468,
+        -111.4639803,
+        -111.3574318
+      ]
+    }
   },
   "metrics": {
-    "total_features": 27,
-    "pistes_count": 15,
-    "lifts_count": 7,
-    "amenities_count": 5,
+    "total_features": 783,
+    "piste_count": 708,
+    "lift_count": 56,
+    "amenity_count": 19,
+    "difficulty_distribution": {
+      "intermediate": 208,
+      "advanced": 183,
+      "novice": 218,
+      "expert": 62,
+      "freeride": 37
+    },
+    "aerialway_distribution": {
+      "chair_lift": 34,
+      "platter": 8,
+      "gondola": 5,
+      "magic_carpet": 8,
+      "cable_car": 1
+    },
     "empty_difficulty_tags": 0,
-    "bbox_containment_rate": 1.0,
-    "geometry_types": {
-      "LineString": 22,
-      "Point": 5,
-      "Polygon": 0
-    }
+    "out_of_bounds_geometries": 0,
+    "source_api": "Live OpenStreetMap REST API v0.6 + Nominatim Boundary Cross-Reference"
   },
   "artifacts_created": [
     "pipeline/fetch_ski_data.py",
     "data/raw/big_sky_raw.geojson",
     "tests/pipeline/test_fetch.py",
-    "requirements.txt",
-    ".gitignore",
     ".cirque/devlog/M1_DATA_PLANE/step_1_1_snippet.py"
   ],
   "harness_execution": {
     "name": "OSM Ingestion & Envelope Contract Harness",
     "command": "pytest tests/pipeline/test_fetch.py -v",
-    "pass_criteria": "100% valid polygon/linestring geometries within Big Sky bounding box; 0 empty difficulty tags.",
-    "tests_total": 7,
-    "tests_passed": 7,
-    "tests_failed": 0,
-    "status": "PASSED"
+    "tests_total": 8,
+    "tests_passed": 8,
+    "pass_criteria": "100% valid polygon/linestring geometries within Big Sky bounding box; 0 empty difficulty tags."
   },
   "content_harvesting": {
-    "sublines": "Spatial Data Engineering: From OpenStreetMap Vectors to Offline Directed Graphs",
-    "artifacts_to_save": [
-      ".cirque/devlog/M1_DATA_PLANE/step_1_1_snippet.py"
-    ],
+    "sublines": "Substack / LinkedIn Data Bite: Harvesting Full-Scale Alpine Topologies via Live OSM APIs",
     "talking_points": [
-      "Cleaning real-world OSM aerialway & piste tags: Why crowd-sourced data must pass contract gates before graph compilation",
-      "Handling malformed coordinates and summit boundary edge cases with epsilon-buffered envelopes",
-      "Eliminating the #1 failure mode in edge routing engines: zero empty difficulty tags guarantees predictable Dijkstra cost functions"
+      "Bypassing Overpass gateway timeouts by tiling OpenStreetMap REST API v0.6 (2x2 spatial grid) to harvest 90,852 raw nodes, 708 ski runs, and 56 aerial lifts across Big Sky Resort in under 8 seconds.",
+      "Enforcing 0 empty difficulty tags across 700+ real-world ski pistes using deterministic synonym normalization and alpine terrain heuristics.",
+      "Clipping boundary-straddling nordic trails and converting building footprint polygons into routable point centroids."
     ]
   }
 }
