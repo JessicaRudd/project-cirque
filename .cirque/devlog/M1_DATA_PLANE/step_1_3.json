@@ -2,7 +2,7 @@
   "step_id": "STEP_1_3",
   "milestone_id": "M1_DATA_PLANE",
   "title": "On-Mountain Amenities & Services Ingestion",
-  "timestamp": "2026-11-09T00:35:55Z",
+  "timestamp": "2026-11-09T00:46:16Z",
   "status": "PASSED",
   "metrics": {
     "total_services": 15,
@@ -21,9 +21,9 @@
       "table_service": 2,
       "none": 9
     },
-    "average_snapping_distance_m": 1.79,
-    "max_snapping_distance_m": 20.12,
-    "virtual_walk_edges_injected": 2,
+    "average_snapping_distance_m": 0.45,
+    "max_snapping_distance_m": 6.8,
+    "virtual_walk_edges_injected": 0,
     "all_snapped_within_25m_pass": true
   },
   "services_ingested": [
@@ -40,7 +40,7 @@
       "name": "Headwaters Grille",
       "category": "quick_snack",
       "service_speed": "counter_service",
-      "snapping_distance_m": 20.12,
+      "snapping_distance_m": 0.0,
       "assigned_node_id": "node_poi_srv_headwaters_grille"
     },
     {

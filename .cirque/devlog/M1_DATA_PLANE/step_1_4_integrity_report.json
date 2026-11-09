@@ -1,0 +1,148 @@
+{
+  "step_id": "STEP_1_4",
+  "milestone_id": "M1_DATA_PLANE",
+  "title": "Graph Integrity Verification Suite",
+  "timestamp": "2026-11-09T00:46:16Z",
+  "total_nodes": 43,
+  "total_edges": 58,
+  "total_services": 15,
+  "piste_count": 51,
+  "lift_count": 7,
+  "gravity_violations": 0,
+  "orphan_edges": 0,
+  "lift_top_dead_ends": 0,
+  "isolated_services": 0,
+  "reachable_base_nodes": [
+    "node_lift_base_2001",
+    "node_lift_base_2002",
+    "node_lift_base_2003",
+    "node_lift_base_2004",
+    "node_lift_base_2005",
+    "node_lift_base_2006",
+    "node_lift_base_2007",
+    "node_village_mountain_village"
+  ],
+  "summit_reachability_matrix": [
+    {
+      "origin_summit_id": "node_jct_001",
+      "origin_summit_name": "Mr. K Top",
+      "reached_base_node_id": "node_lift_base_2002",
+      "reached_base_name": "Swift Current 6 Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 4
+    },
+    {
+      "origin_summit_id": "node_jct_001",
+      "origin_summit_name": "Mr. K Top",
+      "reached_base_node_id": "node_lift_base_2003",
+      "reached_base_name": "Ramcharger 8 Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 4
+    },
+    {
+      "origin_summit_id": "node_jct_001",
+      "origin_summit_name": "Mr. K Top",
+      "reached_base_node_id": "node_lift_base_2007",
+      "reached_base_name": "Explorer 2 Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 4
+    },
+    {
+      "origin_summit_id": "node_jct_001",
+      "origin_summit_name": "Mr. K Top",
+      "reached_base_node_id": "node_village_mountain_village",
+      "reached_base_name": "Mountain Village Base",
+      "reached_base_type": "village",
+      "min_hops": 3
+    },
+    {
+      "origin_summit_id": "node_summit_lone_peak",
+      "origin_summit_name": "Lone Peak Summit",
+      "reached_base_node_id": "node_lift_base_2001",
+      "reached_base_name": "Lone Peak Tram Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 3
+    },
+    {
+      "origin_summit_id": "node_summit_lone_peak",
+      "origin_summit_name": "Lone Peak Summit",
+      "reached_base_node_id": "node_lift_base_2002",
+      "reached_base_name": "Swift Current 6 Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 7
+    },
+    {
+      "origin_summit_id": "node_summit_lone_peak",
+      "origin_summit_name": "Lone Peak Summit",
+      "reached_base_node_id": "node_lift_base_2003",
+      "reached_base_name": "Ramcharger 8 Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 7
+    },
+    {
+      "origin_summit_id": "node_summit_lone_peak",
+      "origin_summit_name": "Lone Peak Summit",
+      "reached_base_node_id": "node_lift_base_2004",
+      "reached_base_name": "Powder Seeker 6 Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 3
+    },
+    {
+      "origin_summit_id": "node_summit_lone_peak",
+      "origin_summit_name": "Lone Peak Summit",
+      "reached_base_node_id": "node_lift_base_2005",
+      "reached_base_name": "Challenger 3 Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 5
+    },
+    {
+      "origin_summit_id": "node_summit_lone_peak",
+      "origin_summit_name": "Lone Peak Summit",
+      "reached_base_node_id": "node_lift_base_2006",
+      "reached_base_name": "Shedhorn 4 Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 5
+    },
+    {
+      "origin_summit_id": "node_summit_lone_peak",
+      "origin_summit_name": "Lone Peak Summit",
+      "reached_base_node_id": "node_lift_base_2007",
+      "reached_base_name": "Explorer 2 Base Terminal",
+      "reached_base_type": "lift_base",
+      "min_hops": 7
+    },
+    {
+      "origin_summit_id": "node_summit_lone_peak",
+      "origin_summit_name": "Lone Peak Summit",
+      "reached_base_node_id": "node_village_mountain_village",
+      "reached_base_name": "Mountain Village Base",
+      "reached_base_type": "village",
+      "min_hops": 6
+    }
+  ],
+  "gatekeeper_status": "PASSED",
+  "artifacts_created": [
+    "scripts/verify_graph_integrity.sql",
+    "tests/pipeline/test_graph_integrity.py",
+    ".cirque/devlog/M1_DATA_PLANE/step_1_4_integrity_report.json",
+    ".cirque/devlog/M1_DATA_PLANE/integrity_queries.sql"
+  ],
+  "harness_execution": {
+    "name": "Comprehensive Graph Topology & Reachability Gatekeeper",
+    "command": "pytest tests/pipeline/test_graph_integrity.py -v",
+    "pass_criteria": "Zero orphan edges, zero negative slope gravity violations on runs, 100% reachability to mountain base.",
+    "status": "PASSED"
+  },
+  "content_harvesting": {
+    "sublines": "Data Quality as a First-Class Citizen in Spatial AI",
+    "artifacts_to_save": [
+      ".cirque/devlog/M1_DATA_PLANE/integrity_queries.sql",
+      ".cirque/devlog/M1_DATA_PLANE/step_1_4_integrity_report.json"
+    ],
+    "talking_points": [
+      "Why standard graph algorithms break when ski lifts travel uphill and skiers travel downhill",
+      "Using Recursive CTEs in SQLite to prove summit-to-base reachability before packaging mobile bundles",
+      "Automated data quality gates that block broken topologies in CI/CD"
+    ]
+  }
+}
