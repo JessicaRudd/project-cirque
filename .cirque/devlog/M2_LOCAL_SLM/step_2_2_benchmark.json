@@ -1,0 +1,87 @@
+{
+  "step_id": "STEP_2_2",
+  "milestone_id": "M2_LOCAL_SLM",
+  "title": "Golden Intent Test Suite & Benchmark Evaluation",
+  "status": "PASSED",
+  "benchmark_summary": {
+    "total_test_cases": 8,
+    "passed_cases": 8,
+    "failed_cases": 0,
+    "exact_match_ratio": 1.0,
+    "field_level_accuracy": 1.0,
+    "total_fields_evaluated": 64,
+    "field_failures_breakdown": {}
+  },
+  "latency_metrics": {
+    "mock_avg_latency_ms": 0.042,
+    "mock_p95_latency_ms": 0.181,
+    "simulated_edge_slm_budget_ms": 450.0,
+    "target_sla_met": true
+  },
+  "test_cases": [
+    {
+      "test_id": "TC_01_INTERMEDIATE_QUICK_SNACK",
+      "name": "Intermediate Quick Snack",
+      "input": "Suggest a place for quick mid day snack and provide route appropriate for intermediate skier",
+      "passed": true,
+      "latency_ms": 0.181,
+      "mismatches": {}
+    },
+    {
+      "test_id": "TC_02_EMERGENCY_PATROL_DISPATCH",
+      "name": "Emergency Patrol Dispatch",
+      "input": "Where is the nearest patrol shack? I need help, my friend crashed.",
+      "passed": true,
+      "latency_ms": 0.028,
+      "mismatches": {}
+    },
+    {
+      "test_id": "TC_03_SIT_DOWN_WARM_LUNCH",
+      "name": "Sit-Down Warm Lunch",
+      "input": "Take me to a sit down warm lunch from here sticking to groomed blue cruisers and no moguls",
+      "passed": true,
+      "latency_ms": 0.024,
+      "mismatches": {}
+    },
+    {
+      "test_id": "TC_04_FASTEST_ROUTE_MOUNTAIN_VILLAGE",
+      "name": "Fastest Route to Village (Difficulty Ceiling)",
+      "input": "Find the fastest way down to Mountain Village avoiding black runs",
+      "passed": true,
+      "latency_ms": 0.025,
+      "mismatches": {}
+    },
+    {
+      "test_id": "TC_05_WIND_HOLD_CHAIRLIFT_DETOUR",
+      "name": "Wind Hold / Specific Chairlift Detour",
+      "input": "Navigate down to Madison Base but avoid Ramcharger and Six Shooter chairs",
+      "passed": true,
+      "latency_ms": 0.026,
+      "mismatches": {}
+    },
+    {
+      "test_id": "TC_06_WARMING_HUT_RESTROOM",
+      "name": "Warming Hut & Restroom",
+      "input": "I'm freezing and need a restroom, where is the nearest warming hut?",
+      "passed": true,
+      "latency_ms": 0.018,
+      "mismatches": {}
+    },
+    {
+      "test_id": "TC_07_STEEP_POWDER_EXPERT_CHUTES",
+      "name": "Steep Powder & Expert Chutes",
+      "input": "Lead me to the steepest double black chutes off Lone Peak",
+      "passed": true,
+      "latency_ms": 0.02,
+      "mismatches": {}
+    },
+    {
+      "test_id": "TC_08_APRES_SKI_BAR",
+      "name": "Apr\u00e8s Ski Bar",
+      "input": "Time for a beer, guide me to a bar at the base",
+      "passed": true,
+      "latency_ms": 0.017,
+      "mismatches": {}
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+[
+  {
+    "test_id": "TC_01_INTERMEDIATE_QUICK_SNACK",
+    "name": "Intermediate Quick Snack",
+    "input": "Suggest a place for quick mid day snack and provide route appropriate for intermediate skier",
+    "expected": {
+      "target_poi_category": "quick_snack",
+      "target_poi_name": null,
+      "service_speed": "grab_and_go",
+      "max_difficulty": "intermediate",
+      "preferred_grooming": true,
+      "avoid_moguls": false,
+      "must_be_open": true,
+      "avoid_lifts": []
+    }
+  },
+  {
+    "test_id": "TC_02_EMERGENCY_PATROL_DISPATCH",
+    "name": "Emergency Patrol Dispatch",
+    "input": "Where is the nearest patrol shack? I need help, my friend crashed.",
+    "expected": {
+      "target_poi_category": "patrol",
+      "target_poi_name": null,
+      "service_speed": null,
+      "max_difficulty": "expert",
+      "preferred_grooming": false,
+      "avoid_moguls": false,
+      "must_be_open": true,
+      "avoid_lifts": []
+    }
+  },
+  {
+    "test_id": "TC_03_SIT_DOWN_WARM_LUNCH",
+    "name": "Sit-Down Warm Lunch",
+    "input": "Take me to a sit down warm lunch from here sticking to groomed blue cruisers and no moguls",
+    "expected": {
+      "target_poi_category": "sit_down",
+      "target_poi_name": null,
+      "service_speed": "table_service",
+      "max_difficulty": "intermediate",
+      "preferred_grooming": true,
+      "avoid_moguls": true,
+      "must_be_open": true,
+      "avoid_lifts": []
+    }
+  },
+  {
+    "test_id": "TC_04_FASTEST_ROUTE_MOUNTAIN_VILLAGE",
+    "name": "Fastest Route to Village (Difficulty Ceiling)",
+    "input": "Find the fastest way down to Mountain Village avoiding black runs",
+    "expected": {
+      "target_poi_category": null,
+      "target_poi_name": "Mountain Village",
+      "service_speed": null,
+      "max_difficulty": "intermediate",
+      "preferred_grooming": false,
+      "avoid_moguls": false,
+      "must_be_open": true,
+      "avoid_lifts": []
+    }
+  },
+  {
+    "test_id": "TC_05_WIND_HOLD_CHAIRLIFT_DETOUR",
+    "name": "Wind Hold / Specific Chairlift Detour",
+    "input": "Navigate down to Madison Base but avoid Ramcharger and Six Shooter chairs",
+    "expected": {
+      "target_poi_category": null,
+      "target_poi_name": "Madison Base",
+      "service_speed": null,
+      "max_difficulty": "advanced",
+      "preferred_grooming": false,
+      "avoid_moguls": false,
+      "must_be_open": true,
+      "avoid_lifts": [
+        "Ramcharger 8",
+        "Six Shooter"
+      ]
+    }
+  },
+  {
+    "test_id": "TC_06_WARMING_HUT_RESTROOM",
+    "name": "Warming Hut & Restroom",
+    "input": "I'm freezing and need a restroom, where is the nearest warming hut?",
+    "expected": {
+      "target_poi_category": "warming_hut",
+      "target_poi_name": null,
+      "service_speed": null,
+      "max_difficulty": "advanced",
+      "preferred_grooming": false,
+      "avoid_moguls": false,
+      "must_be_open": true,
+      "avoid_lifts": []
+    }
+  },
+  {
+    "test_id": "TC_07_STEEP_POWDER_EXPERT_CHUTES",
+    "name": "Steep Powder & Expert Chutes",
+    "input": "Lead me to the steepest double black chutes off Lone Peak",
+    "expected": {
+      "target_poi_category": null,
+      "target_poi_name": "Lone Peak",
+      "service_speed": null,
+      "max_difficulty": "expert",
+      "preferred_grooming": false,
+      "avoid_moguls": false,
+      "must_be_open": true,
+      "avoid_lifts": []
+    }
+  },
+  {
+    "test_id": "TC_08_APRES_SKI_BAR",
+    "name": "Après Ski Bar",
+    "input": "Time for a beer, guide me to a bar at the base",
+    "expected": {
+      "target_poi_category": "bar",
+      "target_poi_name": null,
+      "service_speed": null,
+      "max_difficulty": "advanced",
+      "preferred_grooming": false,
+      "avoid_moguls": false,
+      "must_be_open": true,
+      "avoid_lifts": []
+    }
+  }
+]

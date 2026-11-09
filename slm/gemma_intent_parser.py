@@ -148,6 +148,32 @@ class GemmaIntentParser:
                 "avoid_lifts": [],
             })
 
+        # Warming hut & restroom
+        if any(kw in t_lower for kw in ["warming hut", "warming_hut", "freezing", "restroom"]):
+            return json.dumps({
+                "target_poi_category": "warming_hut",
+                "target_poi_name": None,
+                "service_speed": None,
+                "max_difficulty": "advanced",
+                "preferred_grooming": False,
+                "avoid_moguls": False,
+                "must_be_open": True,
+                "avoid_lifts": [],
+            })
+
+        # Après ski bar / beer
+        if any(kw in t_lower for kw in ["bar", "beer", "après", "apres", "drink"]):
+            return json.dumps({
+                "target_poi_category": "bar",
+                "target_poi_name": None,
+                "service_speed": None,
+                "max_difficulty": "advanced",
+                "preferred_grooming": False,
+                "avoid_moguls": False,
+                "must_be_open": True,
+                "avoid_lifts": [],
+            })
+
         # Sit-down warm lunch / dining
         if any(kw in t_lower for kw in ["sit down", "sit-down", "lunch", "restaurant", "everett"]):
             grooming = "groomed" in t_lower or "groomer" in t_lower
@@ -172,10 +198,45 @@ class GemmaIntentParser:
                 "target_poi_name": None,
                 "service_speed": "grab_and_go",
                 "max_difficulty": difficulty,
-                "preferred_grooming": "groomed" in t_lower,
+                "preferred_grooming": "groomed" in t_lower or "appropriate for intermediate" in t_lower,
                 "avoid_moguls": False,
                 "must_be_open": True,
                 "avoid_lifts": [],
+            })
+
+        # Steep powder chutes / expert terrain
+        if any(kw in t_lower for kw in ["steepest", "chute", "chutes", "double black", "lone peak"]):
+            dest = "Lone Peak" if "lone peak" in t_lower else None
+            return json.dumps({
+                "target_poi_category": None,
+                "target_poi_name": dest,
+                "service_speed": None,
+                "max_difficulty": "expert",
+                "preferred_grooming": False,
+                "avoid_moguls": False,
+                "must_be_open": True,
+                "avoid_lifts": [],
+            })
+
+        # Lift detour / wind hold
+        if "avoid" in t_lower and ("chair" in t_lower or "lift" in t_lower):
+            avoid_lifts: List[str] = []
+            if "ramcharger" in t_lower:
+                avoid_lifts.append("Ramcharger 8")
+            if "six shooter" in t_lower:
+                avoid_lifts.append("Six Shooter")
+            if "swift current" in t_lower:
+                avoid_lifts.append("Swift Current 6")
+            dest = "Madison Base" if "madison base" in t_lower else ("Mountain Village" if "mountain village" in t_lower else None)
+            return json.dumps({
+                "target_poi_category": None,
+                "target_poi_name": dest,
+                "service_speed": None,
+                "max_difficulty": "advanced",
+                "preferred_grooming": False,
+                "avoid_moguls": False,
+                "must_be_open": True,
+                "avoid_lifts": avoid_lifts,
             })
 
         # Village / specific destination
@@ -203,6 +264,7 @@ class GemmaIntentParser:
             "must_be_open": True,
             "avoid_lifts": [],
         })
+
 
     def parse(self, raw_output: str, fallback_transcript: Optional[str] = None) -> SkiIntent:
         """Parses raw model output into a validated SkiIntent.
