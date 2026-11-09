@@ -270,7 +270,7 @@ def generate_canonical_big_sky_reference() -> Dict[str, Any]:
             "difficulty": "novice",
             "piste:type": "downhill",
             "grooming": "groomed",
-            "coords": [[-111.4120, 45.2890], [-111.4085, 45.2875], [-111.4045, 45.2855], [-111.4010, 45.2840]],
+            "coords": [[-111.4120, 45.2730], [-111.4085, 45.2775], [-111.4045, 45.2810], [-111.4010, 45.2840]],
         },
         {
             "id": 1002,
@@ -278,7 +278,7 @@ def generate_canonical_big_sky_reference() -> Dict[str, Any]:
             "difficulty": "novice",
             "piste:type": "downhill",
             "grooming": "groomed",
-            "coords": [[-111.4020, 45.2845], [-111.4005, 45.2835], [-111.3990, 45.2830]],
+            "coords": [[-111.4045, 45.2810], [-111.4025, 45.2825], [-111.4010, 45.2840]],
         },
         {
             "id": 1003,
@@ -286,7 +286,7 @@ def generate_canonical_big_sky_reference() -> Dict[str, Any]:
             "difficulty": "novice",
             "piste:type": "downhill",
             "grooming": "groomed",
-            "coords": [[-111.4080, 45.2860], [-111.4050, 45.2850], [-111.4020, 45.2840]],
+            "coords": [[-111.4080, 45.2860], [-111.4045, 45.2850], [-111.4010, 45.2840]],
         },
         # Intermediate (Blues)
         {
@@ -295,7 +295,7 @@ def generate_canonical_big_sky_reference() -> Dict[str, Any]:
             "difficulty": "intermediate",
             "piste:type": "downhill",
             "grooming": "groomed",
-            "coords": [[-111.4280, 45.2750], [-111.4230, 45.2780], [-111.4180, 45.2810], [-111.4120, 45.2840]],
+            "coords": [[-111.4265, 45.2795], [-111.4200, 45.2815], [-111.4120, 45.2840], [-111.4010, 45.2840]],
         },
         {
             "id": 1011,
@@ -303,7 +303,7 @@ def generate_canonical_big_sky_reference() -> Dict[str, Any]:
             "difficulty": "intermediate",
             "piste:type": "downhill",
             "grooming": "groomed",
-            "coords": [[-111.4250, 45.2790], [-111.4180, 45.2820], [-111.4100, 45.2850]],
+            "coords": [[-111.4265, 45.2795], [-111.4180, 45.2825], [-111.4080, 45.2860]],
         },
         {
             "id": 1012,
@@ -311,15 +311,15 @@ def generate_canonical_big_sky_reference() -> Dict[str, Any]:
             "difficulty": "intermediate",
             "piste:type": "downhill",
             "grooming": "groomed",
-            "coords": [[-111.4265, 45.2795], [-111.4190, 45.2830], [-111.4050, 45.2852]],
+            "coords": [[-111.4265, 45.2795], [-111.4190, 45.2830], [-111.4080, 45.2860], [-111.4010, 45.2840]],
         },
         {
             "id": 1013,
-            "name": "Bighorn",
+            "name": "Silver Knife",
             "difficulty": "intermediate",
             "piste:type": "downhill",
             "grooming": "groomed",
-            "coords": [[-111.4150, 45.2850], [-111.4100, 45.2830], [-111.4030, 45.2820]],
+            "coords": [[-111.4265, 45.2795], [-111.4190, 45.2760], [-111.4120, 45.2730]],
         },
         {
             "id": 1014,
@@ -327,7 +327,7 @@ def generate_canonical_big_sky_reference() -> Dict[str, Any]:
             "difficulty": "intermediate",
             "piste:type": "downhill",
             "grooming": "groomed",
-            "coords": [[-111.4420, 45.2600], [-111.4390, 45.2630], [-111.4360, 45.2660]],
+            "coords": [[-111.4400, 45.2650], [-111.4390, 45.2630], [-111.4420, 45.2600]],
         },
         {
             "id": 1015,
@@ -335,7 +335,15 @@ def generate_canonical_big_sky_reference() -> Dict[str, Any]:
             "difficulty": "intermediate",
             "piste:type": "downhill",
             "grooming": "groomed",
-            "coords": [[-111.4320, 45.2730], [-111.4270, 45.2760], [-111.4200, 45.2800]],
+            "coords": [[-111.4360, 45.2740], [-111.4310, 45.2765], [-111.4265, 45.2795]],
+        },
+        {
+            "id": 1016,
+            "name": "Lobo Runout",
+            "difficulty": "novice",
+            "piste:type": "downhill",
+            "grooming": "groomed",
+            "coords": [[-111.4420, 45.2600], [-111.4250, 45.2700], [-111.4010, 45.2840]],
         },
         # Advanced (Single Black)
         {
@@ -352,7 +360,7 @@ def generate_canonical_big_sky_reference() -> Dict[str, Any]:
             "difficulty": "advanced",
             "piste:type": "downhill",
             "grooming": "backcountry",
-            "coords": [[-111.4500, 45.2750], [-111.4450, 45.2700], [-111.4400, 45.2650]],
+            "coords": [[-111.4510, 45.2785], [-111.4450, 45.2715], [-111.4400, 45.2650]],
         },
         {
             "id": 1022,
@@ -360,7 +368,7 @@ def generate_canonical_big_sky_reference() -> Dict[str, Any]:
             "difficulty": "advanced",
             "piste:type": "downhill",
             "grooming": "mogul",
-            "coords": [[-111.4300, 45.2770], [-111.4260, 45.2790], [-111.4220, 45.2810]],
+            "coords": [[-111.4360, 45.2740], [-111.4310, 45.2770], [-111.4265, 45.2795]],
         },
         # Expert / Freeride (Double Black & Chutes)
         {
@@ -369,7 +377,7 @@ def generate_canonical_big_sky_reference() -> Dict[str, Any]:
             "difficulty": "freeride",
             "piste:type": "downhill",
             "grooming": "backcountry",
-            "coords": [[-111.4510, 45.2785], [-111.4485, 45.2770], [-111.4460, 45.2760]],
+            "coords": [[-111.4510, 45.2785], [-111.4495, 45.2772], [-111.4480, 45.2760]],
         },
         {
             "id": 1031,
@@ -377,7 +385,7 @@ def generate_canonical_big_sky_reference() -> Dict[str, Any]:
             "difficulty": "expert",
             "piste:type": "downhill",
             "grooming": "backcountry",
-            "coords": [[-111.4505, 45.2790], [-111.4480, 45.2780], [-111.4450, 45.2765]],
+            "coords": [[-111.4510, 45.2785], [-111.4440, 45.2765], [-111.4360, 45.2740]],
         },
         {
             "id": 1032,
@@ -385,7 +393,7 @@ def generate_canonical_big_sky_reference() -> Dict[str, Any]:
             "difficulty": "expert",
             "piste:type": "downhill",
             "grooming": "mogul",
-            "coords": [[-111.4380, 45.2820], [-111.4340, 45.2830], [-111.4300, 45.2840]],
+            "coords": [[-111.4380, 45.2820], [-111.4320, 45.2810], [-111.4265, 45.2795]],
         },
     ]
 
@@ -424,7 +432,7 @@ def generate_canonical_big_sky_reference() -> Dict[str, Any]:
             "id": 2006,
             "name": "Shedhorn 4",
             "aerialway": "chair_lift",
-            "coords": [[-111.4400, 45.2650], [-111.4420, 45.2600]],
+            "coords": [[-111.4420, 45.2600], [-111.4400, 45.2650]],
         },
         {
             "id": 2007,
@@ -467,7 +475,7 @@ def generate_canonical_big_sky_reference() -> Dict[str, Any]:
             "id": 3005,
             "name": "Mountain Village Base",
             "amenity": "village",
-            "coords": [-111.4005, 45.2838],
+            "coords": [-111.4010, 45.2840],
         },
     ]
 

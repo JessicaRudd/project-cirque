@@ -1,0 +1,57 @@
+{
+  "step_id": "STEP_1_2",
+  "milestone_id": "M1_DATA_PLANE",
+  "title": "Topological Network Compiler & Elevation Sampler",
+  "timestamp": "2026-11-08T23:58:25Z",
+  "status": "PASSED",
+  "resort": {
+    "id": "us_mt_big_sky",
+    "name": "Big Sky Resort",
+    "control_points": {
+      "lone_peak_summit_m": 3403.0,
+      "andesite_summit_m": 2682.0,
+      "mountain_village_base_m": 2286.0,
+      "madison_base_m": 2164.0
+    }
+  },
+  "metrics": {
+    "nodes_total": 42,
+    "edges_total": 56,
+    "piste_edges": 49,
+    "lift_edges": 7,
+    "virtual_transfer_edges": 7,
+    "elevation_min_m": 2285.8,
+    "elevation_max_m": 3403.5,
+    "downhill_polarity_violations": 0,
+    "uphill_lift_polarity_violations": 0,
+    "summit_to_base_vertical_drop_m": -1117.0,
+    "summit_to_base_route_found": true
+  },
+  "artifacts_created": [
+    "pipeline/build_topology.py",
+    "data/compiled/topology.sqlite",
+    "tests/pipeline/test_topology.py",
+    ".cirque/devlog/M1_DATA_PLANE/graph_junction_logic.py",
+    ".cirque/devlog/M1_DATA_PLANE/step_1_2.json"
+  ],
+  "harness_execution": {
+    "name": "Topological Network & Elevation Verification Harness",
+    "command": "pytest tests/pipeline/test_topology.py -v",
+    "pass_criteria": "All junctions properly snapped; DEM elevations correctly interpolated; transfer edges created between lift summits and trails.",
+    "tests_total": 4,
+    "tests_passed": 4,
+    "tests_failed": 0,
+    "status": "PASSED"
+  },
+  "content_harvesting": {
+    "sublines": "Technical deep dive: Directed Graph Compilation",
+    "artifacts_to_save": [
+      ".cirque/devlog/M1_DATA_PLANE/graph_junction_logic.py"
+    ],
+    "talking_points": [
+      "Splitting shared trails into true routing edges with Shapely intersection snapping",
+      "Enforcing DAG gravity polarity: why piste edges must strictly satisfy vertical_diff_m <= 0 and lifts vertical_diff_m >= 0",
+      "Bridging the 25-meter topological gap between aerial lift upper terminals and downhill trailheads with virtual walk/skate transfer edges"
+    ]
+  }
+}
