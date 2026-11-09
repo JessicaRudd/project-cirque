@@ -1,0 +1,117 @@
+{
+  "step_id": "STEP_3_2",
+  "milestone_id": "M3_MOBILE_ROUTING_CORE",
+  "title": "Multi-Criteria Dijkstra Graph Solver",
+  "timestamp": "2026-11-09T22:45:00Z",
+  "status": "PASSED",
+  "deliverables": [
+    "ios/CirqueCore/Sources/CirqueCore/Routing/CirqueGraphSolver.swift",
+    "ios/CirqueCore/Tests/CirqueCoreTests/RoutingTests.swift",
+    ".cirque/devlog/M3_MOBILE_ROUTING_CORE/step_3_2.json"
+  ],
+  "solver_architecture": {
+    "algorithm": "Multi-Criteria Priority-Queue Dijkstra",
+    "priority_queue": "Pure-Swift Array-Backed Binary MinHeap<FrontierEntry> (O(log V) siftUp/siftDown)",
+    "database_integration": "CirqueDatabase cached C-SQLite3 prepared statements (getOutgoingEdges, getNode, getServices)",
+    "domain_types": [
+      "SkiDifficulty",
+      "EdgeType",
+      "GroomingType",
+      "RouteQuery",
+      "RouteStep",
+      "MinHeap"
+    ],
+    "difficulty_ordering": [
+      "lift (rank 0, neutral)",
+      "novice (rank 1)",
+      "intermediate (rank 2)",
+      "advanced (rank 3)",
+      "expert (rank 4)",
+      "freeride (rank 5)"
+    ],
+    "cost_model": {
+      "hard_difficulty_cutoff": "edge.type == .piste && edge.difficulty > query.maxDifficulty -> nil (inaccessible)",
+      "prefer_groomed_bonus_multiplier": 0.8,
+      "prefer_groomed_ungroomed_penalty_multiplier": 2.5,
+      "avoid_moguls_penalty_multiplier": 5.0,
+      "base_metric": "edge.baseCostSeconds"
+    }
+  },
+  "routing_verification_metrics": {
+    "swift_current_to_everetts_route": {
+      "query": {
+        "startNodeId": "village_base",
+        "targetNodeId": "everetts_8800",
+        "maxDifficulty": "intermediate",
+        "preferGroomed": true,
+        "avoidMoguls": false
+      },
+      "resolved_edges": [
+        "lift_swift_current",
+        "trail_africa",
+        "lift_ramcharger"
+      ],
+      "total_steps": 3,
+      "novice_or_intermediate_piste_ratio": 1.0,
+      "black_or_expert_runs_included": 0,
+      "weighted_cost_seconds": 880.0
+    },
+    "difficulty_ceiling_safety_gate": {
+      "scenario": "Lone Peak Summit (lone_peak_summit) to Mountain Village (village_base) with maxDifficulty = .intermediate",
+      "only_available_descent": "trail_big_couloir (expert, 50-degree pitch)",
+      "solver_result": null,
+      "safety_violation_count": 0
+    },
+    "mogul_avoidance_reroute": {
+      "origin": "swift_current_top",
+      "destination": "andesite_base",
+      "default_advanced_choice": "trail_gullies (95.0s base cost, mogul)",
+      "avoid_moguls_penalized_cost": 475.0,
+      "groomed_cruiser_choice": "trail_africa (150.0s base cost, 120.0s with 0.8x groomed bonus)",
+      "rerouted_successfully": true
+    },
+    "benchmarks_ms": {
+      "subgraph_solve_avg_ms": 0.064,
+      "dense_305_node_607_edge_solve_avg_ms": 0.418,
+      "latency_budget_ms": 10.0
+    }
+  },
+  "harness_execution": {
+    "name": "Multi-Criteria Dijkstra Safety & Performance Harness",
+    "command": "swift test --package-path ios/CirqueCore --filter RoutingTests",
+    "tests_total": 4,
+    "tests_passed": 4,
+    "tests_failed": 0,
+    "test_cases": [
+      {
+        "name": "testSwiftCurrentToEveretts",
+        "status": "PASSED",
+        "assertion": "Resolves village_base -> everetts_8800 via lift_swift_current -> trail_africa -> lift_ramcharger with 100% Novice/Intermediate pistes and 0 Black/Expert runs."
+      },
+      {
+        "name": "testDifficultyCeilingHardConstraint",
+        "status": "PASSED",
+        "assertion": "Asserts solver returns nil when an intermediate skier at lone_peak_summit has only expert descent terrain (trail_big_couloir), preventing cliffing out."
+      },
+      {
+        "name": "testMogulAvoidanceReroute",
+        "status": "PASSED",
+        "assertion": "Asserts avoidMoguls = true applies a 5.0x penalty to trail_gullies (475s) and reroutes onto groomed trail_africa (150s base / 120s groomed)."
+      },
+      {
+        "name": "testSolverExecutionPerformance",
+        "status": "PASSED",
+        "assertion": "Asserts 100-iteration average multi-criteria Dijkstra execution completes in 0.418ms (< 10.0ms budget)."
+      }
+    ],
+    "pass_criteria": "Zero black/expert runs in intermediate routes; hard nil cutoff when no safe descent exists; <10ms execution time."
+  },
+  "content_harvesting": {
+    "sublines": "Never Cliff Out a Skier: Multi-Criteria Dijkstra with Hard Skill Ceilings in Swift 6",
+    "talking_points": [
+      "Enforcing a non-negotiable hard cutoff (`calculateCost -> nil`) whenever `edge.difficulty > query.maxDifficulty` so the solver returns `nil` rather than routing an intermediate skier down a 50-degree chute like Big Couloir.",
+      "Combining hard topological pruning with soft surface multipliers (0.8x groomed bonus, 2.5x ungroomed backcountry penalty, and 5.0x mogul avoidance penalty) to match route geometry to skier fatigue and conditions.",
+      "Implementing a zero-allocation-overhead pure-Swift binary `MinHeap` atop cached C-SQLite3 adjacency queries to solve multi-criteria mountain routes in under 0.5 milliseconds offline."
+    ]
+  }
+}
