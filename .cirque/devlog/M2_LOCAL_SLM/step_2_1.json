@@ -52,11 +52,11 @@
     "pass_criteria": "All model completions strictly parse into typed Intent dataclass with zero missing keys."
   },
   "content_harvesting": {
-    "sublines": "Constraining SLMs to Strict JSON Schemas at 11,000 Feet",
+    "sublines": "Typed JSON Intent Contracts for On-Device Gemma at 11,000 Feet",
     "talking_points": [
-      "Architecting zero-hallucination prompt templates with strict JSON grammar boundaries for edge SLMs (Gemma 2B/4B).",
-      "Building a dual-layer defensive parser in Pydantic that strips markdown code fences, validates closed enum sets (difficulty, service speed, amenity types), and falls back to safe cruising defaults on malformed completions.",
-      "Achieving sub-millisecond on-device intent validation suitable for real-time Bluetooth helmet audio processing in airplane mode."
+      "Prompt templates inject current node ID and local mountain time into a closed 8-field JSON contract for Gemma 2B/4B.",
+      "Pydantic validation strips fenced LLM output, enforces closed enums for difficulty, service speed, and POI categories, and falls back to safe defaults on malformed JSON.",
+      "Mock and custom callback modes run in under 0.1 ms locally with zero external network calls."
     ]
   }
 }

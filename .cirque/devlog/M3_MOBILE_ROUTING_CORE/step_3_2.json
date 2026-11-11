@@ -107,11 +107,11 @@
     "pass_criteria": "Zero black/expert runs in intermediate routes; hard nil cutoff when no safe descent exists; <10ms execution time."
   },
   "content_harvesting": {
-    "sublines": "Never Cliff Out a Skier: Multi-Criteria Dijkstra with Hard Skill Ceilings in Swift 6",
+    "sublines": "Multi-Criteria Dijkstra with Hard Terrain Ceilings in Swift 6",
     "talking_points": [
-      "Enforcing a non-negotiable hard cutoff (`calculateCost -> nil`) whenever `edge.difficulty > query.maxDifficulty` so the solver returns `nil` rather than routing an intermediate skier down a 50-degree chute like Big Couloir.",
-      "Combining hard topological pruning with soft surface multipliers (0.8x groomed bonus, 2.5x ungroomed backcountry penalty, and 5.0x mogul avoidance penalty) to match route geometry to skier fatigue and conditions.",
-      "Implementing a zero-allocation-overhead pure-Swift binary `MinHeap` atop cached C-SQLite3 adjacency queries to solve multi-criteria mountain routes in under 0.5 milliseconds offline."
+      "calculateCost returns nil whenever edge.difficulty > query.maxDifficulty, so an intermediate skier at Lone Peak Summit receives nil instead of a route down Big Couloir.",
+      "Soft surface multipliers (0.8x groomed bonus, 2.5x ungroomed penalty, 5.0x mogul penalty) weight trail choice without relaxing ability limits.",
+      "An array-backed binary MinHeap over cached C-SQLite3 statements solves a 305-node, 607-edge mountain fixture in 0.418 ms offline."
     ]
   }
 }

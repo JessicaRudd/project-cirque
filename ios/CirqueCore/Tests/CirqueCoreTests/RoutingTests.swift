@@ -4,63 +4,6 @@ import Foundation
 
 final class RoutingTests: XCTestCase {
 
-    // MARK: - Section 2.3 Relational Graph DDL
-
-    private static let relationalGraphDDL = """
-    PRAGMA foreign_keys = ON;
-
-    CREATE TABLE nodes (
-        node_id TEXT PRIMARY KEY,
-        name TEXT,
-        lat REAL NOT NULL,
-        lon REAL NOT NULL,
-        elevation_m REAL NOT NULL,
-        node_type TEXT CHECK(node_type IN ('trail_junction', 'lift_base', 'lift_top', 'poi', 'summit', 'village')),
-        poi_category TEXT CHECK(poi_category IN ('restaurant_sitdown', 'cafeteria', 'warming_hut', 'patrol', 'restroom', NULL))
-    );
-
-    CREATE TABLE edges (
-        edge_id TEXT PRIMARY KEY,
-        source_node TEXT NOT NULL REFERENCES nodes(node_id),
-        target_node TEXT NOT NULL REFERENCES nodes(node_id),
-        type TEXT NOT NULL CHECK(type IN ('piste', 'lift')),
-        name TEXT NOT NULL,
-        difficulty TEXT CHECK(difficulty IN ('novice', 'intermediate', 'advanced', 'expert', 'freeride', 'lift')),
-        grooming TEXT CHECK(grooming IN ('groomed', 'backcountry', 'mogul', NULL)),
-        length_m REAL NOT NULL,
-        vertical_diff_m REAL NOT NULL,
-        average_pitch_pct REAL NOT NULL,
-        base_cost_seconds REAL NOT NULL,
-        FOREIGN KEY(source_node) REFERENCES nodes(node_id),
-        FOREIGN KEY(target_node) REFERENCES nodes(node_id)
-    );
-
-    CREATE INDEX idx_edges_source ON edges(source_node);
-    CREATE INDEX idx_edges_target ON edges(target_node);
-    CREATE INDEX idx_edges_type_diff ON edges(type, difficulty);
-    CREATE INDEX idx_nodes_coords ON nodes(lat, lon);
-    CREATE INDEX idx_nodes_poi ON nodes(poi_category);
-
-    CREATE TABLE mountain_services (
-        service_id TEXT PRIMARY KEY,
-        node_id TEXT NOT NULL REFERENCES nodes(node_id),
-        name TEXT NOT NULL,
-        category TEXT NOT NULL CHECK(category IN ('quick_snack', 'cafeteria', 'sit_down', 'bar', 'warming_hut', 'patrol', 'restroom')),
-        service_speed TEXT CHECK(service_speed IN ('grab_and_go', 'counter_service', 'table_service', NULL)),
-        open_time_local TEXT NOT NULL,
-        close_time_local TEXT NOT NULL,
-        requires_reservation INTEGER NOT NULL DEFAULT 0,
-        price_tier TEXT CHECK(price_tier IN ('$', '$$', '$$$', '$$$$', NULL)),
-        is_ski_in_only INTEGER NOT NULL DEFAULT 1,
-        daily_status TEXT NOT NULL DEFAULT 'open' CHECK(daily_status IN ('open', 'closed_weather', 'closed_seasonal'))
-    );
-
-    CREATE INDEX idx_services_lookup ON mountain_services(category, service_speed, daily_status);
-    CREATE INDEX idx_services_node ON mountain_services(node_id);
-    """
-
-    // MARK: - Representative Big Sky Resort Sub-Graph Fixture
-
     private static let bigSkySubgraphSeedSQL = """
     INSERT INTO nodes (node_id, name, lat, lon, elevation_m, node_type, poi_category) VALUES
         ('village_base', 'Mountain Village', 45.2840, -111.4010, 2286.0, 'village', 'cafeteria'),
@@ -73,12 +16,9 @@ final class RoutingTests: XCTestCase {
         edge_id, source_node, target_node, type, name,
         difficulty, grooming, length_m, vertical_diff_m, average_pitch_pct, base_cost_seconds
     ) VALUES
-        -- Aerial Lifts (neutral difficulty = 'lift')
         ('lift_swift_current', 'village_base', 'swift_current_top', 'lift', 'Swift Current 6', 'lift', NULL, 2350.0, 524.5, 22.3, 420.0),
         ('lift_ramcharger', 'andesite_base', 'everetts_8800', 'lift', 'Ramcharger 8', 'lift', NULL, 1890.0, 292.0, 15.4, 340.0),
         ('lift_lone_peak_tram', 'swift_current_top', 'lone_peak_summit', 'lift', 'Lone Peak Tram', 'lift', NULL, 1420.0, 592.5, 41.7, 240.0),
-
-        -- Downhill Ski Trails (pistes)
         ('trail_mr_k', 'everetts_8800', 'village_base', 'piste', 'Mr. K', 'novice', 'groomed', 2450.0, -396.0, 16.2, 240.0),
         ('trail_africa', 'swift_current_top', 'andesite_base', 'piste', 'Africa', 'intermediate', 'groomed', 1850.0, -420.5, 22.7, 150.0),
         ('trail_gullies', 'swift_current_top', 'andesite_base', 'piste', 'The Gullies', 'advanced', 'mogul', 1120.0, -420.5, 37.5, 95.0),
@@ -98,7 +38,7 @@ final class RoutingTests: XCTestCase {
     override func setUpWithError() throws {
         try super.setUpWithError()
         db = try CirqueDatabase(path: ":memory:", mode: .readWriteCreate)
-        try db.executeRaw(Self.relationalGraphDDL)
+        try db.executeRaw(TestGraphSchema.relationalGraphDDL)
         try db.executeRaw(Self.bigSkySubgraphSeedSQL)
         try db.enableQueryOnlyMode()
         solver = CirqueGraphSolver(database: db)
@@ -260,7 +200,7 @@ final class RoutingTests: XCTestCase {
         let perfDb = try CirqueDatabase(path: ":memory:", mode: .readWriteCreate)
         defer { perfDb.close() }
 
-        try perfDb.executeRaw(Self.relationalGraphDDL)
+        try perfDb.executeRaw(TestGraphSchema.relationalGraphDDL)
         try perfDb.executeRaw(Self.bigSkySubgraphSeedSQL)
 
         var bulkSQL = "BEGIN TRANSACTION;\n"

@@ -8,43 +8,46 @@ Verifies:
 4. test_summit_to_base_reachability(): Asserts Dijkstra pathfinding resolves a continuous downhill route from Lone Peak Summit to Mountain Village Base.
 """
 
-import os
-import sqlite3
-import sys
-import pytest
+from __future__ import annotations
 
-# Ensure repo root is in python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+from pathlib import Path
+import sqlite3
+import pytest
 
 from pipeline.build_topology import (
     DEM_CACHE_PATH,
     compile_topology,
     find_shortest_downhill_path,
+    open_readonly_sqlite,
 )
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+RAW_GEOJSON_PATH = REPO_ROOT / "data" / "raw" / "big_sky_raw.geojson"
 
 
 @pytest.fixture(scope="module")
-def compiled_db_path() -> str:
-    """Compile topology.sqlite from data/raw/big_sky_raw.geojson and return database path."""
-    input_path = "data/raw/big_sky_raw.geojson"
-    output_path = "data/compiled/topology.sqlite"
-    summary = compile_topology(input_geojson_path=input_path, output_sqlite_path=output_path)
-    assert os.path.exists(output_path), f"Compiled SQLite bundle must exist at {output_path}"
-    assert os.path.exists(DEM_CACHE_PATH), f"Live DEM elevation cache must exist at {DEM_CACHE_PATH}"
+def compiled_db_path(tmp_path_factory: pytest.TempPathFactory) -> str:
+    """Compile topology.sqlite into an isolated temp directory for deterministic verification."""
+    out_path = tmp_path_factory.mktemp("topology") / "topology.sqlite"
+    summary = compile_topology(
+        input_geojson_path=str(RAW_GEOJSON_PATH),
+        output_sqlite_path=str(out_path),
+        devlog_path=None,
+    )
+    assert out_path.exists(), f"Compiled SQLite bundle must exist at {out_path}"
+    assert Path(DEM_CACHE_PATH).exists(), f"DEM elevation cache must exist at {DEM_CACHE_PATH}"
     assert summary["nodes_total"] >= 1000, f"Expected >= 1000 full-mountain nodes, got {summary['nodes_total']}"
     assert summary["edges_total"] >= 1500, f"Expected >= 1500 full-mountain edges, got {summary['edges_total']}"
-    assert summary["lift_edges"] >= 50, f"Expected >= 50 real lift edges, got {summary['lift_edges']}"
-    return output_path
+    assert summary["lift_edges"] >= 50, f"Expected >= 50 lift edges, got {summary['lift_edges']}"
+    return str(out_path)
 
 
 def test_sqlite_schema(compiled_db_path: str):
-    """
-    Validates that all required tables, columns, foreign keys, and indexes exist
-    and strictly match the DDL constraints in TECH_SPEC.md Section 2.3.
-    """
+    """Validates tables, columns, indexes, and nullable CHECK constraints against TECH_SPEC Section 2.3."""
     conn = sqlite3.connect(compiled_db_path)
     try:
         cur = conn.cursor()
+        cur.execute("PRAGMA foreign_keys = ON;")
 
         cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
         tables = {row[0] for row in cur.fetchall()}
@@ -96,20 +99,38 @@ def test_sqlite_schema(compiled_db_path: str):
             cur.execute(
                 """
                 INSERT INTO nodes (node_id, name, lat, lon, elevation_m, node_type, poi_category)
-                VALUES ('invalid_node_test', 'Bad Node', 45.28, -111.40, 2500.0, 'invalid_type', NULL)
+                VALUES ('invalid_node_type_test', 'Bad Node', 45.28, -111.40, 2500.0, 'invalid_type', NULL)
                 """
+            )
+
+        with pytest.raises(sqlite3.IntegrityError):
+            cur.execute(
+                """
+                INSERT INTO nodes (node_id, name, lat, lon, elevation_m, node_type, poi_category)
+                VALUES ('invalid_poi_cat_test', 'Bad POI Cat', 45.28, -111.40, 2500.0, 'poi', 'quick_snack')
+                """
+            )
+
+        sample_node = cur.execute("SELECT node_id FROM nodes LIMIT 1").fetchone()[0]
+        with pytest.raises(sqlite3.IntegrityError):
+            cur.execute(
+                """
+                INSERT INTO edges (
+                    edge_id, source_node, target_node, type, name,
+                    difficulty, grooming, length_m, vertical_diff_m,
+                    average_pitch_pct, base_cost_seconds
+                )
+                VALUES (?, ?, ?, 'piste', 'Bad Grooming', 'novice', 'slush', 10.0, -1.0, 10.0, 5.0)
+                """,
+                ("invalid_grooming_edge", sample_node, sample_node),
             )
     finally:
         conn.close()
 
 
 def test_dag_gravity_polarity(compiled_db_path: str):
-    """
-    Asserts that 100% of piste edges have vertical_diff_m <= 0 (downhill/flat)
-    and 100% of lift edges have vertical_diff_m >= 0 (uphill) across the full mountain network.
-    """
-    conn = sqlite3.connect(compiled_db_path)
-    conn.row_factory = sqlite3.Row
+    """Asserts 100% of piste edges flow downhill/flat and 100% of lift edges flow uphill."""
+    conn = open_readonly_sqlite(compiled_db_path)
     try:
         cur = conn.cursor()
 
@@ -146,7 +167,7 @@ def test_dag_gravity_polarity(compiled_db_path: str):
             """
         )
         lift_rows = cur.fetchall()
-        assert len(lift_rows) >= 50, f"Topology must contain all 56 real Big Sky lifts, got {len(lift_rows)}"
+        assert len(lift_rows) >= 50, f"Expected >= 50 Big Sky lifts, got {len(lift_rows)}"
 
         for row in lift_rows:
             assert row["vertical_diff_m"] >= 0.0, (
@@ -162,12 +183,8 @@ def test_dag_gravity_polarity(compiled_db_path: str):
 
 
 def test_virtual_transfer_connectivity(compiled_db_path: str):
-    """
-    Asserts that every `lift_top` node across all 56 lifts has at least one outgoing virtual transfer edge
-    to a ski trail (type='piste', difficulty='novice', length_m <= 25.0, base_cost_seconds=30.0).
-    """
-    conn = sqlite3.connect(compiled_db_path)
-    conn.row_factory = sqlite3.Row
+    """Asserts every lift_top node has at least one <= 25m novice unload transfer edge."""
+    conn = open_readonly_sqlite(compiled_db_path)
     try:
         cur = conn.cursor()
 
@@ -200,12 +217,8 @@ def test_virtual_transfer_connectivity(compiled_db_path: str):
 
 
 def test_summit_to_base_reachability(compiled_db_path: str):
-    """
-    Asserts that Dijkstra pathfinding can find a continuous downhill route
-    from Lone Peak Summit to Mountain Village Base.
-    """
-    conn = sqlite3.connect(compiled_db_path)
-    conn.row_factory = sqlite3.Row
+    """Asserts Dijkstra resolves a continuous downhill route from Lone Peak Summit to Mountain Village Base."""
+    conn = open_readonly_sqlite(compiled_db_path)
     try:
         cur = conn.cursor()
 

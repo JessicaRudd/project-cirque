@@ -11,19 +11,21 @@ Tests:
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 import pytest
 
 from slm.gemma_intent_parser import GemmaIntentParser, SkiIntent
 
-FIXTURE_PATH = Path("tests/slm/fixtures/golden_intent_test_cases.json")
-BENCHMARK_REPORT_PATH = Path(".cirque/devlog/M2_LOCAL_SLM/step_2_2_benchmark.json")
+REPO_ROOT = Path(__file__).resolve().parents[2]
+FIXTURE_PATH = REPO_ROOT / "tests" / "slm" / "fixtures" / "golden_intent_test_cases.json"
+DEFAULT_BENCHMARK_REPORT_PATH = REPO_ROOT / ".cirque" / "devlog" / "M2_LOCAL_SLM" / "step_2_2_benchmark.json"
 
 
 def load_golden_cases() -> List[Dict[str, Any]]:
-    """Loads benchmark test cases from the fixture file."""
+    """Loads benchmark test cases from the golden fixture file."""
     assert FIXTURE_PATH.exists(), f"Missing fixture at {FIXTURE_PATH}"
     with open(FIXTURE_PATH, "r", encoding="utf-8") as f:
         cases = json.load(f)
@@ -41,19 +43,16 @@ def parser() -> GemmaIntentParser:
 
 @pytest.mark.parametrize("case", GOLDEN_CASES, ids=lambda c: c["test_id"])
 def test_golden_intent_case_accuracy(parser: GemmaIntentParser, case: Dict[str, Any]):
-    """Tests each golden intent case for exact attribute-by-attribute parity and latency."""
+    """Tests each golden intent case for exact field parity and < 5ms mock latency."""
     transcript = case["input"]
     expected = case["expected"]
 
-    # Measure wall-clock latency
     start_time = time.perf_counter()
     intent: SkiIntent = parser.process_transcript(transcript)
     elapsed_ms = (time.perf_counter() - start_time) * 1000.0
 
-    # Strict latency threshold for local mock execution (must be < 5ms)
     assert elapsed_ms < 5.0, f"Execution too slow: {elapsed_ms:.2f}ms >= 5.0ms"
 
-    # Field-by-field assertions matching expected schema
     for key, expected_value in expected.items():
         actual_value = getattr(intent, key)
         assert actual_value == expected_value, (
@@ -62,11 +61,14 @@ def test_golden_intent_case_accuracy(parser: GemmaIntentParser, case: Dict[str, 
         )
 
 
-def test_compile_and_export_benchmark_report(parser: GemmaIntentParser):
-    """Executes all benchmark cases, aggregates metrics, and saves step_2_2_benchmark.json."""
+def compile_benchmark_report(
+    parser: GemmaIntentParser,
+    output_path: Optional[Path] = DEFAULT_BENCHMARK_REPORT_PATH,
+) -> Dict[str, Any]:
+    """Executes all golden cases, aggregates accuracy and p95 latency, and optionally writes JSON."""
     cases = load_golden_cases()
     results = []
-    latencies_ms = []
+    latencies_ms: List[float] = []
     field_failures: Dict[str, int] = {}
     total_fields_evaluated = 0
     total_fields_matched = 0
@@ -104,7 +106,9 @@ def test_compile_and_export_benchmark_report(parser: GemmaIntentParser):
     exact_match_ratio = passed_count / len(cases)
     field_accuracy = total_fields_matched / total_fields_evaluated if total_fields_evaluated else 0.0
     avg_latency_ms = sum(latencies_ms) / len(latencies_ms)
-    p95_latency_ms = sorted(latencies_ms)[int(len(latencies_ms) * 0.95)]
+    sorted_latencies = sorted(latencies_ms)
+    p95_idx = min(len(sorted_latencies) - 1, max(0, math.ceil(len(sorted_latencies) * 0.95) - 1))
+    p95_latency_ms = sorted_latencies[p95_idx]
 
     benchmark_report = {
         "step_id": "STEP_2_2",
@@ -129,9 +133,21 @@ def test_compile_and_export_benchmark_report(parser: GemmaIntentParser):
         "test_cases": results,
     }
 
-    BENCHMARK_REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(BENCHMARK_REPORT_PATH, "w", encoding="utf-8") as f:
-        json.dump(benchmark_report, f, indent=2)
+    if output_path is not None:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(benchmark_report, f, indent=2)
 
-    assert exact_match_ratio == 1.0, f"Expected 100% exact match ratio, got {exact_match_ratio:.2%}"
-    assert BENCHMARK_REPORT_PATH.exists(), "Benchmark report must be exported"
+    return benchmark_report
+
+
+def test_compile_and_export_benchmark_report(parser: GemmaIntentParser, tmp_path: Path):
+    """Exports the benchmark report into tmp_path without mutating tracked repository files."""
+    out_file = tmp_path / "step_2_2_benchmark.json"
+    report = compile_benchmark_report(parser, output_path=out_file)
+    assert report["benchmark_summary"]["exact_match_ratio"] == 1.0
+    assert out_file.exists(), "Benchmark report must be exported"
+
+
+if __name__ == "__main__":
+    compile_benchmark_report(GemmaIntentParser(mode="mock"), DEFAULT_BENCHMARK_REPORT_PATH)

@@ -99,7 +99,7 @@ HAVING COUNT(e.edge_id) = 0;
 -- @query: summit_to_base_reachability
 -- 5. Summit-to-Base Reachability Proof (Recursive CTE)
 -- Traces continuous downhill piste paths starting from Lone Peak Summit
--- (node_type = 'summit') and Andesite Summit (elevation_m = 2682.0 / node_jct_001)
+-- (node_type = 'summit') and Andesite Summit ('node_jct_001')
 -- down to base destinations (node_type IN ('village', 'lift_base')).
 -- Pass Criterion: Both summits must reach Mountain Village Base ('node_village_mountain_village').
 WITH RECURSIVE summit_origins AS (
@@ -109,7 +109,6 @@ WITH RECURSIVE summit_origins AS (
     FROM nodes
     WHERE node_type = 'summit'
        OR node_id = 'node_jct_001'
-       OR name LIKE '%Andesite%'
 ),
 downstream_path(origin_summit_id, origin_summit_name, current_node_id, hops, visited_path) AS (
     SELECT
@@ -117,7 +116,7 @@ downstream_path(origin_summit_id, origin_summit_name, current_node_id, hops, vis
         origin_summit_name,
         origin_summit_id AS current_node_id,
         0 AS hops,
-        origin_summit_id AS visited_path
+        '->' || origin_summit_id || '->' AS visited_path
     FROM summit_origins
 
     UNION ALL
@@ -127,15 +126,15 @@ downstream_path(origin_summit_id, origin_summit_name, current_node_id, hops, vis
         dp.origin_summit_name,
         e.target_node AS current_node_id,
         dp.hops + 1 AS hops,
-        dp.visited_path || '->' || e.target_node AS visited_path
+        dp.visited_path || e.target_node || '->' AS visited_path
     FROM downstream_path dp
     JOIN edges e
         ON dp.current_node_id = e.source_node
        AND e.type = 'piste'
     WHERE dp.hops < 25
-      AND INSTR(dp.visited_path, e.target_node) = 0
+      AND INSTR(dp.visited_path, '->' || e.target_node || '->') = 0
 )
-SELECT DISTINCT
+SELECT
     dp.origin_summit_id,
     dp.origin_summit_name,
     n.node_id AS reached_base_node_id,

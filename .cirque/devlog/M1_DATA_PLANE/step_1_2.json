@@ -2,15 +2,15 @@
   "step_id": "STEP_1_2",
   "milestone_id": "M1_DATA_PLANE",
   "title": "Topological Network Compiler & Elevation Sampler",
-  "timestamp": "2026-11-09T01:38:46Z",
+  "timestamp": "2026-11-11T20:44:08Z",
   "status": "PASSED",
   "metrics": {
-    "nodes_total": 2923,
-    "edges_total": 2845,
-    "piste_edges": 2789,
-    "lift_edges": 56,
-    "virtual_transfer_edges": 158,
-    "elevation_min_m": 1982.04,
+    "nodes_total": 3457,
+    "edges_total": 3802,
+    "piste_edges": 3741,
+    "lift_edges": 61,
+    "virtual_transfer_edges": 182,
+    "elevation_min_m": 1982.59,
     "elevation_max_m": 3403.5,
     "dem_grid_points": 225,
     "output_sqlite_path": "data/compiled/topology.sqlite"
@@ -19,22 +19,21 @@
     "pipeline/build_topology.py",
     "data/compiled/topology.sqlite",
     "data/raw/usgs_3dep_elevation_cache.json",
-    "tests/pipeline/test_topology.py",
-    ".cirque/devlog/M1_DATA_PLANE/graph_junction_logic.py"
+    "tests/pipeline/test_topology.py"
   ],
   "harness_execution": {
     "name": "Topological Network & Elevation Verification Harness",
-    "command": "pytest tests/pipeline/test_topology.py -v",
+    "command": "uv run --with-requirements requirements.txt pytest tests/pipeline/test_topology.py -v",
     "tests_total": 4,
     "tests_passed": 4,
-    "pass_criteria": "All junctions properly snapped; DEM elevations correctly interpolated; transfer edges created between lift summits and trails."
+    "pass_criteria": "All junctions snapped; DEM elevations interpolated; 25m transfer edges connect lift summits to trails."
   },
   "content_harvesting": {
-    "sublines": "Technical deep dive: Directed Graph Compilation across 708 Real Ski Runs & 56 Lifts",
+    "sublines": "Directed Graph Compilation across 721 Ski Runs & 61 Lifts",
     "talking_points": [
-      "Interpolating 225 live DEM raster points + USGS 3DEP 1m control benchmarks across 2,000+ mountain junctions",
-      "Enforcing strict Directed Acyclic Graph (DAG) gravity polarity across 708 ski runs and 56 aerial lifts",
-      "Injecting 25-meter virtual skate/unload transfer edges from all 56 chairlift and tram top terminals"
+      "225 DEM raster points and 32 surveyed USGS 3DEP benchmarks set elevations across 3457 junctions.",
+      "Downhill piste polarity (vertical_diff_m <= 0) and uphill lift polarity hold across all 3802 directed edges.",
+      "182 unload transfer edges (<= 25m, 30s base cost) link every lift top terminal into the trail network."
     ]
   }
 }

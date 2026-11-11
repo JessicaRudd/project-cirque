@@ -49,30 +49,22 @@ public final class AmenityRouter {
         let categoryFilter = Self.normalizeCategory(query.targetPoiCategory)
         let speedFilter = Self.normalizeNonEmpty(query.preferredServiceSpeed)
 
-        // Normalize HH:MM time filter when requireOpenNow is enabled
-        let canonicalTimeFilter: String?
         let currentMinutes: Int?
-        if query.requireOpenNow {
-            if let rawTime = Self.normalizeNonEmpty(query.currentTimeLocal) {
-                guard let parsed = Self.parseMinutesSinceMidnight(rawTime) else {
-                    return []
-                }
-                currentMinutes = parsed
-                canonicalTimeFilter = Self.formatMinutesAsHHMM(parsed)
-            } else {
-                currentMinutes = nil
-                canonicalTimeFilter = nil
+        if query.requireOpenNow, let rawTime = Self.normalizeNonEmpty(query.currentTimeLocal) {
+            guard let parsed = Self.parseMinutesSinceMidnight(rawTime) else {
+                return []
             }
+            currentMinutes = parsed
         } else {
             currentMinutes = nil
-            canonicalTimeFilter = nil
         }
 
-        // Fetch open-daily services matching SQL index (category, service_speed, daily_status, HH:MM window)
+        // Query composite index (category, service_speed, daily_status='open'); evaluate time windows via
+        // isVenueOpen below so midnight-spanning apres-ski hours (e.g. 16:00-01:00) are not dropped by SQL BETWEEN.
         let dbServices = database.getServices(
             category: categoryFilter,
             speed: speedFilter,
-            timeLocal: canonicalTimeFilter
+            timeLocal: nil
         )
 
         let normalizedPoiName = Self.normalizeNonEmpty(query.targetPoiName)?.lowercased()
@@ -81,36 +73,15 @@ public final class AmenityRouter {
             || speedFilter == "grab_and_go"
 
         return dbServices.filter { venue in
-            // 1. Must be operationally open today
-            guard venue.dailyStatus == "open" else {
+            if let currentMinutes, !Self.isVenueOpen(venue, atMinutesSinceMidnight: currentMinutes) {
                 return false
             }
-
-            // 2. Enforce exact category & service_speed filters when requested
-            if let categoryFilter, venue.category != categoryFilter {
-                return false
-            }
-            if let speedFilter, venue.serviceSpeed != speedFilter {
-                return false
-            }
-
-            // 3. Enforce operating window (open_time_local <= currentTimeLocal <= close_time_local)
-            if query.requireOpenNow, let currentMinutes {
-                guard Self.isVenueOpen(venue, atMinutesSinceMidnight: currentMinutes) else {
-                    return false
-                }
-            }
-
-            // 4. Exclude reservation-required dining when querying quick snacks, grab-and-go, or explicit no-reservation intent
             if disallowReservations && venue.requiresReservation {
                 return false
             }
-
-            // 5. Optional POI name substring match
             if let normalizedPoiName, !venue.name.lowercased().contains(normalizedPoiName) {
                 return false
             }
-
             return true
         }
     }
@@ -254,11 +225,5 @@ public final class AmenityRouter {
             return nil
         }
         return (hours * 60) + minutes
-    }
-
-    private static func formatMinutesAsHHMM(_ totalMinutes: Int) -> String {
-        let hours = totalMinutes / 60
-        let minutes = totalMinutes % 60
-        return String(format: "%02d:%02d", hours, minutes)
     }
 }

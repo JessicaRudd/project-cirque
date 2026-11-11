@@ -18,31 +18,27 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 import re
 import shutil
-import sqlite3
-import sys
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pytest
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-
-from pipeline.build_topology import compile_topology
+from pipeline.build_topology import compile_topology, open_readonly_sqlite
 from pipeline.ingest_mountain_services import ingest_mountain_services
 
-SQL_SCRIPT_PATH = "scripts/verify_graph_integrity.sql"
-SQLITE_DB_PATH = "data/compiled/topology.sqlite"
-REPORT_JSON_PATH = ".cirque/devlog/M1_DATA_PLANE/step_1_4_integrity_report.json"
-DEVLOG_SQL_COPY_PATH = ".cirque/devlog/M1_DATA_PLANE/integrity_queries.sql"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+RAW_GEOJSON_PATH = str(REPO_ROOT / "data" / "raw" / "big_sky_raw.geojson")
+SQL_SCRIPT_PATH = str(REPO_ROOT / "scripts" / "verify_graph_integrity.sql")
+SQLITE_DB_PATH = str(REPO_ROOT / "data" / "compiled" / "topology.sqlite")
+REPORT_JSON_PATH = str(REPO_ROOT / ".cirque" / "devlog" / "M1_DATA_PLANE" / "step_1_4_integrity_report.json")
+DEVLOG_SQL_COPY_PATH = str(REPO_ROOT / ".cirque" / "devlog" / "M1_DATA_PLANE" / "integrity_queries.sql")
 
 
 def parse_named_sql_queries(sql_path: str) -> Dict[str, str]:
-    """
-    Parse `scripts/verify_graph_integrity.sql` into a dictionary of named SQL queries
-    keyed by `-- @query: <name>` annotations.
-    """
+    """Parse `scripts/verify_graph_integrity.sql` into a dict keyed by `-- @query: <name>`."""
     if not os.path.exists(sql_path):
         raise FileNotFoundError(f"SQL verification script not found at {sql_path}")
 
@@ -53,19 +49,12 @@ def parse_named_sql_queries(sql_path: str) -> Dict[str, str]:
         r"--\s*@query:\s*([a-zA-Z0-9_]+)\s*\n(.*?)(?=(?:--\s*@query:)|\Z)",
         re.DOTALL,
     )
-    queries: Dict[str, str] = {}
-    for match in pattern.finditer(content):
-        q_name = match.group(1).strip()
-        q_body = match.group(2).strip()
-        queries[q_name] = q_body
-
-    return queries
+    return {match.group(1).strip(): match.group(2).strip() for match in pattern.finditer(content)}
 
 
 def execute_named_query(sqlite_path: str, query_sql: str) -> List[Dict[str, Any]]:
-    """Execute a single SQL query against `sqlite_path` and return rows as dicts."""
-    conn = sqlite3.connect(sqlite_path)
-    conn.row_factory = sqlite3.Row
+    """Execute a single read-only SQL query against `sqlite_path` and return rows as dicts."""
+    conn = open_readonly_sqlite(sqlite_path)
     try:
         cur = conn.cursor()
         cur.execute(query_sql)
@@ -77,12 +66,10 @@ def execute_named_query(sqlite_path: str, query_sql: str) -> List[Dict[str, Any]
 def generate_integrity_report(
     sqlite_path: str = SQLITE_DB_PATH,
     sql_path: str = SQL_SCRIPT_PATH,
-    report_path: str = REPORT_JSON_PATH,
+    report_path: Optional[str] = REPORT_JSON_PATH,
+    sql_copy_path: Optional[str] = DEVLOG_SQL_COPY_PATH,
 ) -> Dict[str, Any]:
-    """
-    Run all SQL gatekeeper checks, aggregate graph telemetry, and save
-    `.cirque/devlog/M1_DATA_PLANE/step_1_4_integrity_report.json`.
-    """
+    """Run all SQL gatekeeper checks, aggregate graph telemetry, and optionally save artifacts."""
     queries = parse_named_sql_queries(sql_path)
 
     orphan_rows = execute_named_query(sqlite_path, queries["orphan_edges"])
@@ -92,23 +79,14 @@ def generate_integrity_report(
     isolated_service_rows = execute_named_query(sqlite_path, queries["isolated_mountain_services"])
     reachability_rows = execute_named_query(sqlite_path, queries["summit_to_base_reachability"])
 
-    conn = sqlite3.connect(sqlite_path)
+    conn = open_readonly_sqlite(sqlite_path)
     try:
         cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM nodes")
-        total_nodes = int(cur.fetchone()[0])
-
-        cur.execute("SELECT COUNT(*) FROM edges")
-        total_edges = int(cur.fetchone()[0])
-
-        cur.execute("SELECT COUNT(*) FROM mountain_services")
-        total_services = int(cur.fetchone()[0])
-
-        cur.execute("SELECT COUNT(*) FROM edges WHERE type = 'piste'")
-        piste_count = int(cur.fetchone()[0])
-
-        cur.execute("SELECT COUNT(*) FROM edges WHERE type = 'lift'")
-        lift_count = int(cur.fetchone()[0])
+        total_nodes = int(cur.execute("SELECT COUNT(*) FROM nodes").fetchone()[0])
+        total_edges = int(cur.execute("SELECT COUNT(*) FROM edges").fetchone()[0])
+        total_services = int(cur.execute("SELECT COUNT(*) FROM mountain_services").fetchone()[0])
+        piste_count = int(cur.execute("SELECT COUNT(*) FROM edges WHERE type = 'piste'").fetchone()[0])
+        lift_count = int(cur.execute("SELECT COUNT(*) FROM edges WHERE type = 'lift'").fetchone()[0])
     finally:
         conn.close()
 
@@ -117,12 +95,8 @@ def generate_integrity_report(
     lift_top_dead_ends = len(lift_dead_end_rows)
     isolated_services = len(isolated_service_rows)
 
-    reachable_base_nodes = sorted(
-        list({row["reached_base_node_id"] for row in reachability_rows})
-    )
-    summit_origins_verified = sorted(
-        list({row["origin_summit_id"] for row in reachability_rows})
-    )
+    reachable_base_nodes = sorted({row["reached_base_node_id"] for row in reachability_rows})
+    summit_origins_verified = sorted({row["origin_summit_id"] for row in reachability_rows})
 
     passed = (
         orphan_edges == 0
@@ -133,7 +107,7 @@ def generate_integrity_report(
         and len(summit_origins_verified) >= 2
     )
 
-    report = {
+    report: Dict[str, Any] = {
         "step_id": "STEP_1_4",
         "milestone_id": "M1_DATA_PLANE",
         "title": "Graph Integrity Verification Suite",
@@ -151,136 +125,137 @@ def generate_integrity_report(
         "summit_reachability_matrix": reachability_rows,
         "gatekeeper_status": "PASSED" if passed else "FAILED",
         "artifacts_created": [
-            SQL_SCRIPT_PATH,
+            "scripts/verify_graph_integrity.sql",
             "tests/pipeline/test_graph_integrity.py",
-            report_path,
-            DEVLOG_SQL_COPY_PATH,
+            ".cirque/devlog/M1_DATA_PLANE/step_1_4_integrity_report.json",
+            ".cirque/devlog/M1_DATA_PLANE/integrity_queries.sql",
         ],
         "harness_execution": {
             "name": "Comprehensive Graph Topology & Reachability Gatekeeper",
-            "command": "pytest tests/pipeline/test_graph_integrity.py -v",
+            "command": "uv run --with-requirements requirements.txt pytest tests/pipeline/test_graph_integrity.py -v",
             "pass_criteria": "Zero orphan edges, zero negative slope gravity violations on runs, 100% reachability to mountain base.",
             "status": "PASSED" if passed else "FAILED",
         },
         "content_harvesting": {
-            "sublines": "Data Quality as a First-Class Citizen in Spatial AI",
+            "sublines": f"SQLite Recursive CTE Gatekeeper across {total_nodes} Vertices & {total_edges} Edges",
             "artifacts_to_save": [
-                DEVLOG_SQL_COPY_PATH,
-                report_path,
+                ".cirque/devlog/M1_DATA_PLANE/integrity_queries.sql",
+                ".cirque/devlog/M1_DATA_PLANE/step_1_4_integrity_report.json",
             ],
             "talking_points": [
-                "Why standard graph algorithms break when ski lifts travel uphill and skiers travel downhill",
-                "Using Recursive CTEs in SQLite to prove summit-to-base reachability before packaging mobile bundles",
-                "Automated data quality gates that block broken topologies in CI/CD",
+                f"0 orphan foreign keys, 0 uphill pistes, and 0 lift-top dead ends across {total_edges} directed edges.",
+                "Delimiter-bounded SQLite recursive CTE proves downhill reachability from Lone Peak (3,403m) and Andesite (2,682m) to Mountain Village Base.",
+                f"All {total_services} dining, patrol, warming hut, and restroom venues sit on connected vertices before mobile packaging.",
             ],
+        },
+        "_query_rows": {
+            "orphan_edges": orphan_rows,
+            "uphill_piste_violations": uphill_piste_rows,
+            "downhill_lift_violations": downhill_lift_rows,
+            "lift_top_dead_ends": lift_dead_end_rows,
+            "isolated_mountain_services": isolated_service_rows,
+            "summit_to_base_reachability": reachability_rows,
         },
     }
 
-    os.makedirs(os.path.dirname(report_path), exist_ok=True)
-    with open(report_path, "w", encoding="utf-8") as f:
-        json.dump(report, f, indent=2)
+    serializable = {k: v for k, v in report.items() if not k.startswith("_")}
+    if report_path:
+        os.makedirs(os.path.dirname(report_path), exist_ok=True)
+        with open(report_path, "w", encoding="utf-8") as f:
+            json.dump(serializable, f, indent=2)
 
-    if os.path.exists(sql_path):
-        shutil.copyfile(sql_path, DEVLOG_SQL_COPY_PATH)
+    if sql_copy_path and os.path.exists(sql_path):
+        os.makedirs(os.path.dirname(sql_copy_path), exist_ok=True)
+        shutil.copyfile(sql_path, sql_copy_path)
 
     return report
 
 
 @pytest.fixture(scope="module")
-def verified_environment() -> Dict[str, Any]:
-    """
-    Ensure `data/compiled/topology.sqlite` is compiled and services are ingested,
-    then parse `scripts/verify_graph_integrity.sql` and generate the integrity report.
-    """
-    if not os.path.exists(SQLITE_DB_PATH):
-        compile_topology()
-        ingest_mountain_services()
-    else:
-        # Ensure mountain_services is populated if topology.sqlite was rebuilt
-        conn = sqlite3.connect(SQLITE_DB_PATH)
-        try:
-            cur = conn.cursor()
-            cur.execute("SELECT COUNT(*) FROM mountain_services")
-            if cur.fetchone()[0] == 0:
-                ingest_mountain_services()
-        finally:
-            conn.close()
+def verified_environment(tmp_path_factory: pytest.TempPathFactory) -> Dict[str, Any]:
+    """Compile and ingest into an isolated temp directory, then execute all gatekeeper SQL checks once."""
+    tmp_dir = tmp_path_factory.mktemp("integrity")
+    tmp_db = str(tmp_dir / "topology.sqlite")
+    tmp_report = str(tmp_dir / "step_1_4_integrity_report.json")
+    tmp_sql_copy = str(tmp_dir / "integrity_queries.sql")
 
-    queries = parse_named_sql_queries(SQL_SCRIPT_PATH)
-    report = generate_integrity_report(SQLITE_DB_PATH, SQL_SCRIPT_PATH, REPORT_JSON_PATH)
-    return {"queries": queries, "report": report}
+    compile_topology(
+        input_geojson_path=RAW_GEOJSON_PATH,
+        output_sqlite_path=tmp_db,
+        devlog_path=None,
+    )
+    ingest_mountain_services(sqlite_path=tmp_db, devlog_path=None)
+
+    report = generate_integrity_report(
+        sqlite_path=tmp_db,
+        sql_path=SQL_SCRIPT_PATH,
+        report_path=tmp_report,
+        sql_copy_path=tmp_sql_copy,
+    )
+    return {"report": report, "report_path": tmp_report}
 
 
 def test_no_orphan_edges(verified_environment: Dict[str, Any]):
-    """
-    Check 1: Asserts that 0 edges reference non-existent source_node or target_node vertices.
-    """
-    queries = verified_environment["queries"]
-    orphan_rows = execute_named_query(SQLITE_DB_PATH, queries["orphan_edges"])
+    """Check 1: Asserts 0 edges reference non-existent source_node or target_node vertices."""
+    report = verified_environment["report"]
+    orphan_rows = report["_query_rows"]["orphan_edges"]
     assert len(orphan_rows) == 0, f"Detected orphan edges with missing foreign keys: {orphan_rows}"
-    assert verified_environment["report"]["orphan_edges"] == 0
+    assert report["orphan_edges"] == 0
 
 
 def test_gravity_invariants(verified_environment: Dict[str, Any]):
-    """
-    Check 2: Asserts that 0 piste edges flow uphill (> 0.5% pitch or positive vertical_diff_m)
-    and 0 lift edges flow downhill (vertical_diff_m <= 0).
-    """
-    queries = verified_environment["queries"]
-    uphill_pistes = execute_named_query(SQLITE_DB_PATH, queries["uphill_piste_violations"])
-    downhill_lifts = execute_named_query(SQLITE_DB_PATH, queries["downhill_lift_violations"])
+    """Check 2: Asserts 0 piste edges flow uphill and 0 lift edges flow downhill."""
+    report = verified_environment["report"]
+    uphill_pistes = report["_query_rows"]["uphill_piste_violations"]
+    downhill_lifts = report["_query_rows"]["downhill_lift_violations"]
 
     assert len(uphill_pistes) == 0, f"Unauthorized uphill ski runs detected: {uphill_pistes}"
     assert len(downhill_lifts) == 0, f"Unauthorized downhill ski lifts detected: {downhill_lifts}"
-    assert verified_environment["report"]["gravity_violations"] == 0
+    assert report["gravity_violations"] == 0
 
 
 def test_lift_summit_escapes(verified_environment: Dict[str, Any]):
-    """
-    Check 3: Asserts that every `lift_top` terminal node has at least one outgoing piste edge
-    (no chairlift unloads into a topological dead end).
-    """
-    queries = verified_environment["queries"]
-    dead_ends = execute_named_query(SQLITE_DB_PATH, queries["lift_top_dead_ends"])
-    assert len(dead_ends) == 0, f"Lift top terminals with 0 escape routes detected: {dead_ends}"
+    """Check 3 & 4: Asserts every lift_top has an escape route and every service venue has incident edges."""
+    report = verified_environment["report"]
+    dead_ends = report["_query_rows"]["lift_top_dead_ends"]
+    isolated_services = report["_query_rows"]["isolated_mountain_services"]
 
-    # Verify Mountain Services connectivity as well (Check 4)
-    isolated_services = execute_named_query(SQLITE_DB_PATH, queries["isolated_mountain_services"])
+    assert len(dead_ends) == 0, f"Lift top terminals with 0 escape routes detected: {dead_ends}"
     assert len(isolated_services) == 0, f"Isolated mountain services with 0 incident edges: {isolated_services}"
 
 
 def test_base_lodge_reachability(verified_environment: Dict[str, Any]):
-    """
-    Check 5: Executes the Recursive CTE `downstream_path` query and asserts that
-    both Lone Peak Summit (`node_summit_lone_peak`) and Andesite Summit (`node_jct_001`)
-    can reach Mountain Village Base (`node_village_mountain_village`) via continuous downhill pistes.
-    """
-    queries = verified_environment["queries"]
-    reachability_rows = execute_named_query(SQLITE_DB_PATH, queries["summit_to_base_reachability"])
+    """Check 5: Asserts Lone Peak Summit and Andesite Summit reach Mountain Village Base via downhill pistes."""
+    report = verified_environment["report"]
+    reachability_rows = report["_query_rows"]["summit_to_base_reachability"]
     assert len(reachability_rows) > 0, "Recursive CTE returned 0 reachable base nodes from summits"
 
-    # Map origin_summit_id -> set of reached base node IDs
     summit_to_bases: Dict[str, set[str]] = {}
     for row in reachability_rows:
         summit_to_bases.setdefault(row["origin_summit_id"], set()).add(row["reached_base_node_id"])
 
-    # Assert Lone Peak Summit reaches Mountain Village Base
     assert "node_summit_lone_peak" in summit_to_bases, "Lone Peak Summit missing from reachability origins"
     assert "node_village_mountain_village" in summit_to_bases["node_summit_lone_peak"], (
         f"Lone Peak Summit cannot reach Mountain Village Base. Reached: {summit_to_bases['node_summit_lone_peak']}"
     )
 
-    # Assert Andesite Summit (node_jct_001) reaches Mountain Village Base
     assert "node_jct_001" in summit_to_bases, "Andesite Summit (node_jct_001) missing from reachability origins"
     assert "node_village_mountain_village" in summit_to_bases["node_jct_001"], (
         f"Andesite Summit cannot reach Mountain Village Base. Reached: {summit_to_bases['node_jct_001']}"
     )
 
-    # Verify report JSON structure and gatekeeper status
-    report = verified_environment["report"]
-    assert os.path.exists(REPORT_JSON_PATH), f"Integrity report must be saved at {REPORT_JSON_PATH}"
+    assert os.path.exists(verified_environment["report_path"])
     assert report["gatekeeper_status"] == "PASSED"
-    assert report["total_nodes"] >= 42
-    assert report["total_edges"] >= 56
+    assert report["total_nodes"] >= 1000
+    assert report["total_edges"] >= 1500
     assert report["total_services"] >= 15
     assert "node_village_mountain_village" in report["reachable_base_nodes"]
+
+
+if __name__ == "__main__":
+    summary_report = generate_integrity_report()
+    print(
+        f"Integrity gatekeeper {summary_report['gatekeeper_status']}: "
+        f"{summary_report['total_nodes']} nodes, {summary_report['total_edges']} edges, "
+        f"{summary_report['total_services']} services"
+    )

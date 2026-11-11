@@ -88,11 +88,11 @@
     "pass_criteria": "Database opens in WAL mode; edge/vertex queries execute in under 2ms; zero memory leaks."
   },
   "content_harvesting": {
-    "sublines": "Zero-Overhead Offline SQLite in Swift: Why We Bypassed ORMs for Sub-Millisecond Ski Routing",
+    "sublines": "Direct C-SQLite3 in Swift 6 for Sub-Millisecond Offline Ski Routing",
     "talking_points": [
-      "Bypassing SwiftData and CoreData overhead in favor of direct C-SQLite3 (`libsqlite3`) bindings with `SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX` to eliminate lock contention on the mountain.",
-      "Implementing a dictionary-backed `OpaquePointer` prepared statement cache using `sqlite3_reset` and `sqlite3_clear_bindings` to achieve 41-microsecond adjacency lookups.",
-      "Enforcing immutable bundle safety with `PRAGMA query_only = ON` and deterministic `sqlite3_finalize` + `sqlite3_close_v2` teardown in `deinit` to guarantee zero memory leaks."
+      "CirqueDatabase links directly against system libsqlite3 with SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX instead of pulling in SwiftData or CoreData.",
+      "A dictionary-backed OpaquePointer cache resets compiled SQLite bytecode via sqlite3_reset and sqlite3_clear_bindings for 0.041 ms adjacency reads.",
+      "PRAGMA query_only = ON rejects writes at the SQLite engine boundary, and deinit finalizes every cached statement with zero pointer leaks across 50 lifecycle iterations."
     ]
   }
 }

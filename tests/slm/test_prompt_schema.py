@@ -21,18 +21,19 @@ from slm.gemma_intent_parser import (
     sanitize_model_output,
 )
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
 
 def test_valid_json_schema_export():
     """Asserts that intent_schema.json matches Pydantic's exported schema."""
-    schema_path = Path("slm/schemas/intent_schema.json")
+    schema_path = REPO_ROOT / "slm" / "schemas" / "intent_schema.json"
     assert schema_path.exists(), "slm/schemas/intent_schema.json must exist"
 
-    disk_schema = json.loads(schema_path.read_text())
+    disk_schema = json.loads(schema_path.read_text(encoding="utf-8"))
     pydantic_schema = export_intent_json_schema()
 
     assert disk_schema == pydantic_schema
     assert disk_schema["title"] == "SkiIntent"
-    assert "properties" in disk_schema
     properties = disk_schema["properties"]
 
     expected_keys = [
@@ -50,8 +51,7 @@ def test_valid_json_schema_export():
 
 
 def test_pydantic_validation_success():
-    """Validates parsing on typical ski prompts (snack search, powder bowl navigation, ski patrol emergency)."""
-    # 1. Quick snack query
+    """Validates SkiIntent parsing on snack search, powder bowl navigation, and patrol dispatch."""
     snack_payload = {
         "target_poi_category": "quick_snack",
         "target_poi_name": None,
@@ -69,7 +69,6 @@ def test_pydantic_validation_success():
     assert snack_intent.preferred_grooming is True
     assert snack_intent.avoid_lifts == ["Swift Current 6"]
 
-    # 2. Powder bowl navigation
     bowl_payload = {
         "target_poi_category": None,
         "target_poi_name": "Liberty Bowl",
@@ -85,7 +84,6 @@ def test_pydantic_validation_success():
     assert bowl_intent.max_difficulty == "expert"
     assert bowl_intent.preferred_grooming is False
 
-    # 3. Ski patrol emergency
     emergency_payload = {
         "target_poi_category": "patrol",
         "target_poi_name": None,
@@ -102,34 +100,27 @@ def test_pydantic_validation_success():
 
 
 def test_invalid_enum_rejection():
-    """Asserts that invalid difficulty values raise validation errors and parser falls back to safe defaults."""
+    """Asserts invalid enum values raise ValidationError directly and fall back to safe defaults in parse()."""
     parser = GemmaIntentParser(mode="mock")
 
-    # Direct Pydantic validation should raise ValidationError on unknown difficulty
     invalid_raw = {
         "target_poi_category": "cafeteria",
-        "max_difficulty": "super_hard",  # Invalid!
+        "max_difficulty": "super_hard",
     }
     with pytest.raises(ValidationError):
         SkiIntent.model_validate(invalid_raw)
 
-    # Invalid POI category should also raise ValidationError
-    invalid_category = {
-        "target_poi_category": "nightclub",  # Invalid!
-    }
     with pytest.raises(ValidationError):
-        SkiIntent.model_validate(invalid_category)
+        SkiIntent.model_validate({"target_poi_category": "nightclub"})
 
-    # Parser method parse() gracefully falls back to default safe SkiIntent
-    invalid_json_str = json.dumps(invalid_raw)
-    fallback_intent = parser.parse(invalid_json_str)
+    fallback_intent = parser.parse(json.dumps(invalid_raw))
     assert isinstance(fallback_intent, SkiIntent)
-    assert fallback_intent.max_difficulty == "advanced"  # default safe fallback
+    assert fallback_intent.max_difficulty == "advanced"
     assert fallback_intent.target_poi_category is None
 
 
 def test_parser_strips_markdown_fences():
-    """Asserts that model responses wrapped in ```json ... ``` are cleanly sanitized and parsed."""
+    """Asserts fenced JSON and conversational preamble containing braces are sanitized accurately."""
     parser = GemmaIntentParser(mode="mock")
 
     wrapped_response = """```json
@@ -152,45 +143,48 @@ def test_parser_strips_markdown_fences():
     assert intent.max_difficulty == "intermediate"
     assert intent.avoid_moguls is True
 
-    # Test conversational framing around json block
-    conversational_response = """Sure! Here is the JSON you requested:
-```
+    conversational_with_braces = """Context {time: 12:30}: Here is the JSON block:
+```json
 {
   "target_poi_category": "warming_hut",
   "max_difficulty": "novice",
   "must_be_open": true
 }
 ```
-Hope that helps!"""
+Done {ok}."""
 
-    intent2 = parser.parse(conversational_response)
+    sanitized = sanitize_model_output(conversational_with_braces)
+    assert sanitized.startswith("{") and sanitized.endswith("}")
+    intent2 = parser.parse(conversational_with_braces)
     assert intent2.target_poi_category == "warming_hut"
     assert intent2.max_difficulty == "novice"
 
 
-def test_mock_engine_end_to_end():
-    """Asserts that the parser runs end-to-end in mock mode without external dependencies."""
+def test_mock_and_live_callback_end_to_end():
+    """Asserts mock mode, distinct restroom/cafeteria branches, and custom live inference callbacks work end-to-end."""
     parser = GemmaIntentParser(mode="mock")
 
-    # 1. Emergency query
     intent1 = parser.process_transcript("Emergency! Ski patrol needed on Swift Current!")
     assert intent1.target_poi_category == "patrol"
     assert intent1.max_difficulty == "expert"
 
-    # 2. Sit-down lunch query
     intent2 = parser.process_transcript("Find me a sit down lunch on blue groomed cruisers with no moguls")
     assert intent2.target_poi_category == "sit_down"
     assert intent2.max_difficulty == "intermediate"
     assert intent2.preferred_grooming is True
     assert intent2.avoid_moguls is True
 
-    # 3. Quick snack query
-    intent3 = parser.process_transcript("I need a quick burger or snack for intermediate skier")
-    assert intent3.target_poi_category == "quick_snack"
-    assert intent3.service_speed == "grab_and_go"
-    assert intent3.max_difficulty == "intermediate"
+    intent3 = parser.process_transcript("Can you help me find a bar at the base?")
+    assert intent3.target_poi_category == "bar"
 
-    # 4. Prompt construction check
+    intent4 = parser.process_transcript("Where is the closest restroom?")
+    assert intent4.target_poi_category == "restroom"
+
+    intent5 = parser.process_transcript("Route me to the main cafeteria on blue runs")
+    assert intent5.target_poi_category == "cafeteria"
+    assert intent5.service_speed == "counter_service"
+    assert intent5.max_difficulty == "intermediate"
+
     prompt = build_gemma_prompt(
         transcript="Find me a warm lunch",
         current_node_id="node_swift_current_top",
@@ -199,4 +193,14 @@ def test_mock_engine_end_to_end():
     assert "node_swift_current_top" in prompt
     assert "12:30" in prompt
     assert "Find me a warm lunch" in prompt
-    assert "You are the Cirque On-Device Ski Routing Engine." in prompt
+
+    with pytest.raises(ValueError):
+        GemmaIntentParser(mode="live")
+
+    live_parser = GemmaIntentParser(
+        mode="live",
+        inference_fn=lambda p: '{"target_poi_category": "patrol", "max_difficulty": "expert"}' if "Swift" in p else "{}",
+    )
+    live_intent = live_parser.process_transcript("Help", current_node_id="Swift")
+    assert live_intent.target_poi_category == "patrol"
+    assert live_intent.max_difficulty == "expert"

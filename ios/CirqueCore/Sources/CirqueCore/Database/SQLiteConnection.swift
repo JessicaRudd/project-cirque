@@ -5,14 +5,8 @@ import SQLite3
 import CSQLite
 #endif
 
-// MARK: - SQLite Destructor Bridge
-
-/// SQLITE_TRANSIENT tells SQLite to make its own private copy of bound text/blob buffers immediately.
+/// SQLITE_TRANSIENT tells SQLite to copy bound text buffers immediately before the Swift String pointer expires.
 private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
-
-// Domain enumerations (EdgeType, SkiDifficulty, GroomingType) are defined in CirqueGraphSolver.swift.
-
-// MARK: - Domain Records (Section 2.3 Relational Graph DDL)
 
 /// Represents a discrete topological vertex in `nodes` (trail junction, lift terminal, summit, village, or snapped POI).
 public struct NodeRecord: Equatable, Hashable, Codable, Sendable {
@@ -450,29 +444,23 @@ public final class CirqueDatabase {
             sqlite3_clear_bindings(stmt)
         }
 
-        if let category {
-            sqlite3_bind_text(stmt, 1, category, -1, SQLITE_TRANSIENT)
-        } else {
-            sqlite3_bind_null(stmt, 1)
-        }
-
-        if let speed {
-            sqlite3_bind_text(stmt, 2, speed, -1, SQLITE_TRANSIENT)
-        } else {
-            sqlite3_bind_null(stmt, 2)
-        }
-
-        if let timeLocal {
-            sqlite3_bind_text(stmt, 3, timeLocal, -1, SQLITE_TRANSIENT)
-        } else {
-            sqlite3_bind_null(stmt, 3)
-        }
+        Self.bindOptionalText(stmt, index: 1, value: category)
+        Self.bindOptionalText(stmt, index: 2, value: speed)
+        Self.bindOptionalText(stmt, index: 3, value: timeLocal)
 
         var services: [MountainServiceRecord] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
             services.append(Self.decodeService(from: stmt))
         }
         return services
+    }
+
+    private static func bindOptionalText(_ stmt: OpaquePointer, index: Int32, value: String?) {
+        if let value {
+            sqlite3_bind_text(stmt, index, value, -1, SQLITE_TRANSIENT)
+        } else {
+            sqlite3_bind_null(stmt, index)
+        }
     }
 
     // MARK: - Zero-Copy Column Decoders
