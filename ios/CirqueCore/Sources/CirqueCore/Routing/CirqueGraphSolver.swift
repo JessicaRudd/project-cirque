@@ -80,6 +80,7 @@ public struct RouteQuery: Equatable, Hashable, Codable, Sendable {
     public let maxDifficulty: SkiDifficulty
     public let preferGroomed: Bool
     public let avoidMoguls: Bool
+    public let excludeReservations: Bool
 
     public init(
         startNodeId: String,
@@ -91,7 +92,8 @@ public struct RouteQuery: Equatable, Hashable, Codable, Sendable {
         requireOpenNow: Bool = true,
         maxDifficulty: SkiDifficulty = .advanced,
         preferGroomed: Bool = false,
-        avoidMoguls: Bool = false
+        avoidMoguls: Bool = false,
+        excludeReservations: Bool = false
     ) {
         self.startNodeId = startNodeId
         self.targetNodeId = targetNodeId
@@ -103,6 +105,24 @@ public struct RouteQuery: Equatable, Hashable, Codable, Sendable {
         self.maxDifficulty = maxDifficulty
         self.preferGroomed = preferGroomed
         self.avoidMoguls = avoidMoguls
+        self.excludeReservations = excludeReservations
+    }
+}
+
+/// Optimal destination and reconstructed path returned by a single-pass 1-to-N multi-target Dijkstra search.
+public struct ResolvedTargetRoute: Equatable, Hashable, Codable, Sendable {
+    public let destinationNodeId: String
+    public let totalCostSeconds: Double
+    public let steps: [RouteStep]
+
+    public init(
+        destinationNodeId: String,
+        totalCostSeconds: Double,
+        steps: [RouteStep]
+    ) {
+        self.destinationNodeId = destinationNodeId
+        self.totalCostSeconds = totalCostSeconds
+        self.steps = steps
     }
 }
 
@@ -331,16 +351,29 @@ public final class CirqueGraphSolver {
     /// - Returns: Chronological array of `RouteStep` instructions from `startNodeId` to destination, or `nil` if no safe route exists.
     public func solveShortestPath(query: RouteQuery) -> [RouteStep]? {
         let candidateTargets = resolveTargetNodeIds(for: query)
+        return solveShortestPath(toCandidateNodes: candidateTargets, query: query)?.steps
+    }
+
+    /// Executes a single-pass 1-to-N priority-queue Dijkstra search from `query.startNodeId` across `candidateTargets`.
+    /// Because vertices are extracted from the min-heap in monotonically non-decreasing order of `cumulativeCost`,
+    /// the first target popped from `frontier` is guaranteed to be the globally optimal reachable destination.
+    public func solveShortestPath(
+        toCandidateNodes candidateTargets: Set<String>,
+        query: RouteQuery
+    ) -> ResolvedTargetRoute? {
         guard !candidateTargets.isEmpty else {
             return nil
         }
 
-        // Trivial case: already at target node.
+        // Trivial case: already standing at a qualifying target node.
         if candidateTargets.contains(query.startNodeId) {
-            return []
+            return ResolvedTargetRoute(
+                destinationNodeId: query.startNodeId,
+                totalCostSeconds: 0.0,
+                steps: []
+            )
         }
 
-        // Verify start node exists in the graph or has outgoing edges.
         var frontier = MinHeap<FrontierEntry>(minimumCapacity: 64)
         var minCosts: [String: Double] = [query.startNodeId: 0.0]
         var predecessors: [String: PredecessorStep] = [:]
@@ -349,6 +382,7 @@ public final class CirqueGraphSolver {
         frontier.insert(FrontierEntry(nodeId: query.startNodeId, cumulativeCost: 0.0))
 
         var resolvedDestinationNodeId: String?
+        var resolvedTotalCost: Double = 0.0
 
         while let current = frontier.extractMin() {
             // Skip stale heap entries superseded by a shorter path.
@@ -357,9 +391,10 @@ public final class CirqueGraphSolver {
             }
             settledNodes.insert(current.nodeId)
 
-            // First target popped from the min-heap is guaranteed globally optimal.
+            // First target popped from the min-heap is guaranteed globally optimal across all N candidates.
             if candidateTargets.contains(current.nodeId) {
                 resolvedDestinationNodeId = current.nodeId
+                resolvedTotalCost = current.cumulativeCost
                 break
             }
 
@@ -371,7 +406,7 @@ public final class CirqueGraphSolver {
                 }
 
                 guard let edgeCost = calculateCost(edge: edge, query: query) else {
-                    // Hard cutoff triggered: edge exceeds skier's maxDifficulty ceiling.
+                    // Hard cutoff triggered: edge closed/on-hold or exceeds skier's maxDifficulty ceiling.
                     continue
                 }
 
@@ -394,14 +429,19 @@ public final class CirqueGraphSolver {
             }
         }
 
-        guard let destinationNodeId = resolvedDestinationNodeId else {
+        guard let destinationNodeId = resolvedDestinationNodeId,
+              let steps = reconstructRoute(
+                  from: query.startNodeId,
+                  to: destinationNodeId,
+                  predecessors: predecessors
+              ) else {
             return nil
         }
 
-        return reconstructRoute(
-            from: query.startNodeId,
-            to: destinationNodeId,
-            predecessors: predecessors
+        return ResolvedTargetRoute(
+            destinationNodeId: destinationNodeId,
+            totalCostSeconds: resolvedTotalCost,
+            steps: steps
         )
     }
 
