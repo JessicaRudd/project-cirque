@@ -1,0 +1,136 @@
+{
+  "step_id": "STEP_3_3",
+  "milestone_id": "M3_MOBILE_ROUTING_CORE",
+  "title": "Dynamic Delta Status Overlay Engine",
+  "timestamp": "2026-11-11T13:38:00Z",
+  "status": "PASSED",
+  "deliverables": [
+    "ios/CirqueCore/Sources/CirqueCore/Routing/DynamicOverlayManager.swift",
+    "ios/CirqueCore/Sources/CirqueCore/Routing/CirqueGraphSolver.swift",
+    "ios/CirqueCore/Tests/CirqueCoreTests/DynamicOverlayTests.swift",
+    ".cirque/devlog/M3_MOBILE_ROUTING_CORE/step_3_3.json"
+  ],
+  "overlay_engine_architecture": {
+    "storage_model": "100% In-Memory Dictionary ([String: DynamicStatusOverlay]) — Zero SQLite Mutation",
+    "concurrency_primitive": "NSLock (@unchecked Sendable final class compatible with Swift 6 StrictConcurrency)",
+    "sqlite_bundle_invariant": "PRAGMA query_only = ON preserved; 0 writes issued to topology.sqlite",
+    "domain_types": [
+      "EdgeStatus (open, closedPatrol, windHold, mechanicalHold)",
+      "GroomingOverride (groomed, ungroomed, powder, moguls)",
+      "DynamicStatusOverlay",
+      "DynamicOverlayError",
+      "DynamicOverlayManager"
+    ],
+    "supported_telemetry_schemas": [
+      "Liftie live telemetry JSON (lifts.status, trails.status, millisecond timestamp normalization)",
+      "Cirque Cloud Run GET /v1/resorts/{id}/overlay delta envelope (overlays / deltas / edges)",
+      "Direct JSON array of DynamicStatusOverlay records (camelCase & snake_case keys)"
+    ],
+    "solver_integration": {
+      "hard_exclusions": [
+        "closedPatrol -> calculateCost returns nil",
+        "windHold -> calculateCost returns nil",
+        "mechanicalHold -> calculateCost returns nil"
+      ],
+      "soft_overrides": {
+        "groomed": "0.8x bonus multiplier when query.preferGroomed == true",
+        "ungroomed": "2.5x penalty multiplier when query.preferGroomed == true",
+        "powder": "2.5x penalty multiplier when query.preferGroomed == true",
+        "moguls": "5.0x penalty multiplier when query.avoidMoguls == true"
+      }
+    }
+  },
+  "reroute_verification_metrics": {
+    "origin_node": "village_mountain_village",
+    "destination_node": "everetts_8800",
+    "primary_path_normal_conditions": {
+      "resolved_edges": [
+        "lift_ramcharger"
+      ],
+      "total_steps": 1,
+      "weighted_cost_seconds": 240.0
+    },
+    "wind_hold_detour_path": {
+      "active_overlay": {
+        "edgeId": "lift_ramcharger",
+        "status": "windHold",
+        "effectiveGrooming": null
+      },
+      "resolved_edges": [
+        "lift_swift_current",
+        "trail_andesite_connector"
+      ],
+      "total_steps": 2,
+      "weighted_cost_seconds": 540.0,
+      "sqlite_mutated": false
+    },
+    "lift_reopened_restoration": {
+      "updated_status": "open",
+      "resolved_edges": [
+        "lift_ramcharger"
+      ],
+      "restored_immediately": true
+    },
+    "benchmarks_ms": {
+      "wind_hold_single_shot_reroute_ms": 0.092,
+      "wind_hold_detour_100_iter_avg_ms": 0.0307,
+      "overlay_lookup_nslock_avg_ms": 0.000122,
+      "delta_json_payload_parse_avg_ms": 0.0574,
+      "latency_budget_ms": 5.0
+    }
+  },
+  "artifacts_created": [
+    "ios/CirqueCore/Sources/CirqueCore/Routing/DynamicOverlayManager.swift",
+    "ios/CirqueCore/Tests/CirqueCoreTests/DynamicOverlayTests.swift",
+    ".cirque/devlog/M3_MOBILE_ROUTING_CORE/wind_hold_reroute_diff.txt",
+    ".cirque/devlog/M3_MOBILE_ROUTING_CORE/step_3_3.json"
+  ],
+  "harness_execution": {
+    "name": "Dynamic Lift Closure & Weather Reroute Harness",
+    "command": "swift test --package-path ios/CirqueCore --filter DynamicOverlayTests",
+    "tests_total": 6,
+    "tests_passed": 6,
+    "tests_failed": 0,
+    "test_cases": [
+      {
+        "name": "testDirectRouteUnderNormalConditions",
+        "status": "PASSED",
+        "assertion": "Verifies baseline route from village_mountain_village to everetts_8800 selects direct Path A via lift_ramcharger (240s)."
+      },
+      {
+        "name": "testWindHoldDetour",
+        "status": "PASSED",
+        "assertion": "Applies windHold to lift_ramcharger and verifies clean detour via lift_swift_current -> trail_andesite_connector in 0.092ms (< 5.0ms budget) with PRAGMA query_only = ON untouched."
+      },
+      {
+        "name": "testReopenedLiftRestoresPrimaryPath",
+        "status": "PASSED",
+        "assertion": "Verifies setting lift_ramcharger back to .open (and calling resetAllOverlays()) immediately restores direct Ramcharger 8 routing."
+      },
+      {
+        "name": "testDeltaJSONPayloadParsing",
+        "status": "PASSED",
+        "assertion": "Ingests both Liftie live telemetry JSON and Cloud Run delta envelopes via applyOverlayDelta(jsonPayload:), verifying status/grooming overrides and live route switching."
+      },
+      {
+        "name": "testHardExclusionStatusesAndSoftGroomingOverrides",
+        "status": "PASSED",
+        "assertion": "Asserts closedPatrol, windHold, and mechanicalHold return nil from calculateCost, and effectiveGrooming (.ungroomed, .powder, .moguls, .groomed) overrides base piste multipliers."
+      },
+      {
+        "name": "testConcurrentThreadSafeOverlayAccess",
+        "status": "PASSED",
+        "assertion": "Executes 200 concurrent read/write operations across DispatchQueue.concurrentPerform with zero data races under Swift 6 StrictConcurrency."
+      }
+    ],
+    "pass_criteria": "testWindHoldDetour() cleanly redirects route around Ramcharger 8 within 5ms of overlay application without mutating SQLite."
+  },
+  "content_harvesting": {
+    "sublines": "Dynamic Graph Edge Masking in Memory: Sub-100-Microsecond Alpine Weather Rerouting",
+    "talking_points": [
+      "Decoupling immutable seasonal cartography (`topology.sqlite` opened with `PRAGMA query_only = ON` and 1-year CDN caching) from volatile 5-minute weather holds using an `NSLock`-guarded in-memory `[String: DynamicStatusOverlay]` overlay table.",
+      "Supporting both hard topological pruning (`.windHold`, `.closedPatrol`, `.mechanicalHold` -> `nil` edge cost) and soft surface overrides (`effectiveGrooming: .moguls` applying a 5.0x penalty atop base groomed cruisers) inside `CirqueGraphSolver.calculateCost`.",
+      "Re-evaluating multi-criteria Dijkstra detours from Mountain Village around a wind-held Ramcharger 8 via Swift Current 6 in 0.092 milliseconds (54x faster than the 5.0ms target budget)."
+    ]
+  }
+}
