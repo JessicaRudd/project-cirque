@@ -1,89 +1,19 @@
 {
+  "timestamp_epoch": 1794405644,
   "step_id": "STEP_1_1",
-  "milestone_id": "M1_DATA_PLANE",
-  "title": "Raw Data Harvester & Bounding Box Extractor",
-  "timestamp": "2026-11-09T01:11:02Z",
-  "status": "PASSED",
-  "resort": {
-    "id": "us_mt_big_sky",
-    "name": "Big Sky Resort, Montana",
-    "bbox": {
-      "south": 45.23,
-      "west": -111.47,
-      "north": 45.32,
-      "east": -111.34
-    },
-    "sub_zones": [
-      "Mountain Village",
-      "Lone Mountain",
-      "Moonlight Basin",
-      "Andesite",
-      "Spanish Peaks"
-    ],
-    "boundary_reference": {
-      "resort_id": "us_mt_big_sky",
-      "skimap_area_id": 515,
-      "sub_zones": [
-        "Mountain Village",
-        "Lone Mountain",
-        "Moonlight Basin",
-        "Andesite",
-        "Spanish Peaks"
-      ],
-      "nominatim_verified": true,
-      "osm_boundary_way_id": 1254863688,
-      "osm_boundary_type": "way",
-      "display_name": "Big Sky Resort, Big Sky, Madison County, Montana, United States",
-      "official_osm_bbox": [
-        45.2469805,
-        45.3148468,
-        -111.4639803,
-        -111.3574318
-      ]
-    }
+  "bbox": {
+    "south": 45.215,
+    "west": -111.49,
+    "north": 45.34,
+    "east": -111.33
   },
-  "metrics": {
-    "total_features": 783,
-    "piste_count": 708,
-    "lift_count": 56,
-    "amenity_count": 19,
-    "difficulty_distribution": {
-      "intermediate": 208,
-      "advanced": 183,
-      "novice": 218,
-      "expert": 62,
-      "freeride": 37
-    },
-    "aerialway_distribution": {
-      "chair_lift": 34,
-      "platter": 8,
-      "gondola": 5,
-      "magic_carpet": 8,
-      "cable_car": 1
-    },
-    "empty_difficulty_tags": 0,
-    "out_of_bounds_geometries": 0,
-    "source_api": "Live OpenStreetMap REST API v0.6 + Nominatim Boundary Cross-Reference"
-  },
-  "artifacts_created": [
-    "pipeline/fetch_ski_data.py",
-    "data/raw/big_sky_raw.geojson",
-    "tests/pipeline/test_fetch.py",
-    ".cirque/devlog/M1_DATA_PLANE/step_1_1_snippet.py"
-  ],
-  "harness_execution": {
-    "name": "OSM Ingestion & Envelope Contract Harness",
-    "command": "pytest tests/pipeline/test_fetch.py -v",
-    "tests_total": 8,
-    "tests_passed": 8,
-    "pass_criteria": "100% valid polygon/linestring geometries within Big Sky bounding box; 0 empty difficulty tags."
-  },
-  "content_harvesting": {
-    "sublines": "Substack / LinkedIn Data Bite: Harvesting Full-Scale Alpine Topologies via Live OSM APIs",
-    "talking_points": [
-      "Bypassing Overpass gateway timeouts by tiling OpenStreetMap REST API v0.6 (2x2 spatial grid) to harvest 90,852 raw nodes, 708 ski runs, and 56 aerial lifts across Big Sky Resort in under 8 seconds.",
-      "Enforcing 0 empty difficulty tags across 700+ real-world ski pistes using deterministic synonym normalization and alpine terrain heuristics.",
-      "Clipping boundary-straddling nordic trails and converting building footprint polygons into routable point centroids."
-    ]
+  "total_features": 782,
+  "pistes_count": 721,
+  "lifts_count": 61,
+  "difficulty_distribution": {
+    "intermediate": 214,
+    "advanced": 186,
+    "novice": 222,
+    "expert": 99
   }
 }
