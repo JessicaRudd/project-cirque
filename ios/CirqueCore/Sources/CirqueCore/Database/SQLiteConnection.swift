@@ -10,45 +10,7 @@ import CSQLite
 /// SQLITE_TRANSIENT tells SQLite to make its own private copy of bound text/blob buffers immediately.
 private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
-// MARK: - Domain Enumerations (Section 2.3 & Section 4 Compatibility)
-
-public enum EdgeType: String, Codable, Sendable, CaseIterable {
-    case piste = "piste"
-    case lift = "lift"
-}
-
-public enum SkiDifficulty: String, Codable, Sendable, Comparable, CaseIterable {
-    case novice = "novice"
-    case intermediate = "intermediate"
-    case advanced = "advanced"
-    case expert = "expert"
-    case freeride = "freeride"
-    case lift = "lift"
-
-    private var rank: Int {
-        switch self {
-        case .lift: return 0
-        case .novice: return 1
-        case .intermediate: return 2
-        case .advanced: return 3
-        case .expert: return 4
-        case .freeride: return 5
-        }
-    }
-
-    public static func < (lhs: SkiDifficulty, rhs: SkiDifficulty) -> Bool {
-        lhs.rank < rhs.rank
-    }
-}
-
-public enum GroomingType: String, Codable, Sendable, CaseIterable {
-    case groomed = "groomed"
-    case backcountry = "backcountry"
-    case mogul = "mogul"
-    case ungroomed = "ungroomed"
-    case powder = "powder"
-    case moguls = "moguls"
-}
+// Domain enumerations (EdgeType, SkiDifficulty, GroomingType) are defined in CirqueGraphSolver.swift.
 
 // MARK: - Domain Records (Section 2.3 Relational Graph DDL)
 
