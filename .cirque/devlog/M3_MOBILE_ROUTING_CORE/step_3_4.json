@@ -1,0 +1,124 @@
+{
+  "step_id": "STEP_3_4",
+  "milestone_id": "M3_MOBILE_ROUTING_CORE",
+  "title": "Time-Gated Amenity & Multi-Target Routing",
+  "timestamp": "2026-11-11T13:48:35Z",
+  "status": "PASSED",
+  "deliverables": [
+    "ios/CirqueCore/Sources/CirqueCore/Routing/AmenityRouter.swift",
+    "ios/CirqueCore/Sources/CirqueCore/Routing/CirqueGraphSolver.swift",
+    "ios/CirqueCore/Tests/CirqueCoreTests/AmenityRoutingTests.swift",
+    ".cirque/devlog/M3_MOBILE_ROUTING_CORE/step_3_4_content_pack.md",
+    ".cirque/devlog/M3_MOBILE_ROUTING_CORE/step_3_4.json"
+  ],
+  "amenity_router_architecture": {
+    "algorithm": "Temporal SQLite Index Pre-Filtering + Single-Pass 1-to-N Multi-Target Priority-Queue Dijkstra",
+    "complexity": "O((V + E) log V) single heap pass with early-exit on first popped target vertex",
+    "domain_types": [
+      "AmenityRouter",
+      "AmenityRouteMatch",
+      "ResolvedTargetRoute"
+    ],
+    "filtering_rules": {
+      "daily_status": "daily_status == 'open'",
+      "temporal_window": "open_time_local <= currentTimeLocal <= close_time_local (when requireOpenNow == true)",
+      "category_and_speed": "Exact category & service_speed filtering (with SLM alias normalization e.g. restaurant_sitdown -> sit_down)",
+      "reservation_exclusion": "Excludes requires_reservation == 1 when excludeReservations == true, category == 'quick_snack', or service_speed == 'grab_and_go'"
+    },
+    "safety_and_overlay_guarantees": [
+      "Strictly enforces query.maxDifficulty hard ceiling across all candidate paths",
+      "Honors live DynamicOverlayManager patrol closures, wind holds, mechanical holds, and grooming overrides",
+      "Returns nil when no matching open venue is safely reachable within skier ability limits"
+    ]
+  },
+  "verification_metrics": {
+    "intermediate_snack_routing_1315": {
+      "origin": "andesite_summit",
+      "time_local": "13:15",
+      "max_difficulty": "intermediate",
+      "selected_venue_id": "srv_shedhorn_grill",
+      "selected_venue_name": "Shedhorn Grill",
+      "resolved_edges": [
+        "trail_africa"
+      ],
+      "weighted_cost_seconds": 112.0,
+      "novice_or_intermediate_piste_ratio": 1.0,
+      "black_or_expert_runs_included": 0
+    },
+    "time_gated_late_afternoon_1600": {
+      "origin": "andesite_summit",
+      "time_local": "16:00",
+      "excluded_closed_venue": "srv_shedhorn_grill (closes 15:30)",
+      "excluded_unsafe_venue": "srv_black_canyon_cafe (requires Advanced Black run Ambush)",
+      "selected_venue_id": "srv_vista_hall_grab_go",
+      "selected_venue_name": "Vista Hall Grab & Go",
+      "resolved_edges": [
+        "trail_mr_k"
+      ],
+      "weighted_cost_seconds": 224.0
+    },
+    "reservation_exclusion": {
+      "excluded_venues": [
+        "srv_everetts_8800",
+        "srv_everetts_tasting_bar"
+      ],
+      "selected_venue_id": "srv_shedhorn_grill"
+    },
+    "benchmarks_ms": {
+      "resolve_candidate_venues_full_mountain_avg_ms": 0.0301,
+      "multi_target_dijkstra_full_mountain_avg_ms": 0.1035,
+      "latency_budget_ms": 10.0
+    }
+  },
+  "artifacts_created": [
+    "ios/CirqueCore/Sources/CirqueCore/Routing/AmenityRouter.swift",
+    "ios/CirqueCore/Tests/CirqueCoreTests/AmenityRoutingTests.swift",
+    ".cirque/devlog/M3_MOBILE_ROUTING_CORE/amenity_routing_sample.swift",
+    ".cirque/devlog/M3_MOBILE_ROUTING_CORE/step_3_4_content_pack.md",
+    ".cirque/devlog/M3_MOBILE_ROUTING_CORE/step_3_4.json"
+  ],
+  "harness_execution": {
+    "name": "Temporal Venue Filter & Multi-Destination Routing Harness",
+    "command": "swift test --package-path ios/CirqueCore --filter AmenityRoutingTests",
+    "tests_total": 5,
+    "tests_passed": 5,
+    "tests_failed": 0,
+    "test_cases": [
+      {
+        "name": "testIntermediateSnackRouting",
+        "status": "PASSED",
+        "assertion": "Selects Shedhorn Grill at 13:15 via Intermediate trail Africa (0 Black runs), rejecting faster 85s Black Canyon Espresso Cafe behind Advanced run Ambush."
+      },
+      {
+        "name": "testTimeGatedClosedVenueExcluded",
+        "status": "PASSED",
+        "assertion": "Excludes Shedhorn Grill at 16:00 (after 15:30 close) and routes safely down Novice Mr. K to open Vista Hall Grab & Go."
+      },
+      {
+        "name": "testReservationExclusion",
+        "status": "PASSED",
+        "assertion": "Excludes closer reservation-only Everett's 8800 and tasting counter (25s away) for walk-in quick-snack queries, selecting Shedhorn Grill."
+      },
+      {
+        "name": "testDynamicPatrolClosureRedirectsAmenitySelection",
+        "status": "PASSED",
+        "assertion": "When DynamicOverlayManager marks trail_africa as .closedPatrol at 13:15, automatically redirects snack selection to Vista Hall Grab & Go via Mr. K."
+      },
+      {
+        "name": "testUnreachableBlackOnlyVenueReturnsNilForIntermediateSkier",
+        "status": "PASSED",
+        "assertion": "Returns nil rather than violating maxDifficulty = .intermediate when the sole matching venue is only reachable via Black run Ambush."
+      }
+    ],
+    "pass_criteria": "testIntermediateSnackRouting() selects open grab-and-go venue and creates route adhering to skier ability limits."
+  },
+  "content_harvesting": {
+    "sublines": "Multi-Target Pathfinding with Temporal Constraints: Voice-Guided Burger Routing at Big Sky",
+    "content_pack": ".cirque/devlog/M3_MOBILE_ROUTING_CORE/step_3_4_content_pack.md",
+    "talking_points": [
+      "Solving 1-to-N multi-target Dijkstra in a single binary min-heap pass (`0.1035 ms` across compiled Big Sky `topology.sqlite`) rather than running N redundant 1-to-1 searches.",
+      "Pre-filtering on-mountain dining and safety POIs by local operating hours (`13:15` vs `16:00`), service speed (`grab_and_go`), and reservation flags (`requires_reservation == 0`) before graph expansion.",
+      "Combining hard terrain skill ceilings (`maxDifficulty = .intermediate`) with live RAM patrol closures so hungry skiers never get routed onto black-diamond terrain."
+    ]
+  }
+}
