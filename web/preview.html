@@ -3,15 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Project Cirque — Big Sky Resort Spatial Preview Harness (Milestones 1–3)</title>
-  <meta name="description" content="Standalone Leaflet.js geospatial preview harness for Project Cirque Milestones 1–3: Big Sky Resort topological graph, SQLite mountain_services POIs, and dynamic Dijkstra routing." />
+  <title>Project Cirque — Big Sky Spatial Routing Harness (Milestones 1–3)</title>
+  <meta name="description" content="Leaflet geospatial verification harness for Project Cirque Milestones 1–3: Big Sky Resort topological graph, read-only SQLite mountain_services POIs, and multi-criteria Dijkstra routing." />
 
-  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-  <!-- Leaflet 1.9.4 CSS & JS via CDN -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -26,25 +24,22 @@
 
   <style>
     :root {
-      --bg-panel: rgba(15, 23, 42, 0.94);
-      --bg-card: rgba(30, 41, 59, 0.85);
-      --bg-card-hover: rgba(51, 65, 85, 0.92);
-      --border-subtle: rgba(148, 163, 184, 0.22);
+      --bg-panel: #0f172a;
+      --bg-card: #1e293b;
+      --border-subtle: #334155;
       --text-primary: #f8fafc;
       --text-secondary: #cbd5e1;
       --text-muted: #94a3b8;
 
-      /* Required Difficulty & Lift Palette */
-      --piste-novice: #2ecc71;
-      --piste-intermediate: #3498db;
-      --piste-black: #2c3e50;
-      --lift-gold: #f39c12;
+      --piste-novice: #16a34a;
+      --piste-intermediate: #2563eb;
+      --piste-black: #1e293b;
+      --lift-gold: #d97706;
 
-      /* Scenario Highlight Palette */
-      --route-cyan: #00f0ff;
-      --route-cyan-glow: rgba(0, 240, 255, 0.45);
-      --windhold-red: #e74c3c;
-      --detour-green: #2ecc71;
+      --route-sky: #0284c7;
+      --route-sky-bright: #38bdf8;
+      --windhold-red: #dc2626;
+      --detour-green: #16a34a;
     }
 
     * {
@@ -71,20 +66,17 @@
       background: #e8e4d8;
     }
 
-    /* Top-Left Brand & Telemetry Header */
     .brand-overlay {
       position: absolute;
       top: 16px;
       left: 58px;
       z-index: 1000;
       background: var(--bg-panel);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
       border: 1px solid var(--border-subtle);
-      border-radius: 14px;
-      padding: 12px 16px;
-      box-shadow: 0 12px 32px rgba(2, 6, 23, 0.45);
-      max-width: 460px;
+      border-radius: 10px;
+      padding: 12px 15px;
+      box-shadow: 0 8px 20px rgba(2, 6, 23, 0.45);
+      max-width: 470px;
       pointer-events: auto;
     }
 
@@ -95,20 +87,23 @@
     }
 
     .brand-badge {
-      width: 34px;
-      height: 34px;
-      border-radius: 9px;
-      background: linear-gradient(135deg, #0ea5e9, #2563eb);
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
-      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.35);
       flex-shrink: 0;
     }
 
     .brand-title-row h1 {
-      font-size: 15px;
+      font-size: 14.5px;
       font-weight: 700;
       letter-spacing: -0.01em;
       color: var(--text-primary);
@@ -116,7 +111,7 @@
     }
 
     .brand-subtitle {
-      font-size: 11.5px;
+      font-size: 11px;
       color: var(--text-muted);
       margin-top: 2px;
       font-family: 'JetBrains Mono', monospace;
@@ -128,16 +123,16 @@
       gap: 6px;
       margin-top: 10px;
       padding-top: 9px;
-      border-top: 1px solid rgba(148, 163, 184, 0.15);
+      border-top: 1px solid var(--border-subtle);
     }
 
     .stat-pill {
       font-family: 'JetBrains Mono', monospace;
       font-size: 10.5px;
       padding: 3px 8px;
-      border-radius: 6px;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 5px;
+      background: #020617;
+      border: 1px solid var(--border-subtle);
       color: var(--text-secondary);
       display: inline-flex;
       align-items: center;
@@ -151,7 +146,6 @@
       display: inline-block;
     }
 
-    /* Top-Right Scenario Control Panel */
     .scenario-panel {
       position: absolute;
       top: 16px;
@@ -161,34 +155,29 @@
       max-height: calc(100vh - 32px);
       overflow-y: auto;
       background: var(--bg-panel);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--border-subtle);
-      border-radius: 16px;
-      padding: 16px;
-      box-shadow: 0 16px 40px rgba(2, 6, 23, 0.55);
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 10px 24px rgba(2, 6, 23, 0.5);
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 12px;
     }
 
     .panel-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 9px;
     }
 
     .panel-header h2 {
-      font-size: 13.5px;
+      font-size: 12.5px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: #f8fafc;
-      display: flex;
-      align-items: center;
-      gap: 7px;
     }
 
     .milestone-tag {
@@ -196,34 +185,32 @@
       font-size: 10px;
       font-weight: 600;
       padding: 2px 7px;
-      border-radius: 999px;
-      background: rgba(46, 204, 113, 0.16);
+      border-radius: 4px;
+      background: #052e16;
       color: #4ade80;
-      border: 1px solid rgba(46, 204, 113, 0.35);
+      border: 1px solid #166534;
     }
 
     .control-card {
       background: var(--bg-card);
-      border: 1px solid rgba(148, 163, 184, 0.18);
-      border-radius: 12px;
+      border: 1px solid #475569;
+      border-radius: 8px;
       padding: 12px;
-      transition: all 0.2s ease;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
     }
 
-    .control-card.active-cyan {
-      border-color: var(--route-cyan);
-      box-shadow: 0 0 18px rgba(0, 240, 255, 0.18);
-      background: rgba(8, 47, 73, 0.55);
+    .control-card.active-route {
+      border-color: var(--route-sky-bright);
+      background: #0c2d48;
     }
 
     .control-card.active-windhold {
-      border-color: var(--detour-green);
-      box-shadow: 0 0 18px rgba(46, 204, 113, 0.18);
-      background: rgba(20, 83, 45, 0.42);
+      border-color: #4ade80;
+      background: #0f291e;
     }
 
     .control-label {
-      font-size: 11px;
+      font-size: 10.5px;
       font-family: 'JetBrains Mono', monospace;
       color: var(--text-muted);
       margin-bottom: 7px;
@@ -232,50 +219,44 @@
       justify-content: space-between;
     }
 
-    /* Button: Simulate Intermediate Snack Route */
     .btn-snack-route {
       width: 100%;
-      padding: 11px 14px;
-      border-radius: 10px;
-      border: 1px solid rgba(0, 240, 255, 0.5);
-      background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(14, 116, 144, 0.45));
-      color: #ecfeff;
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid #0284c7;
+      background: #0f172a;
+      color: #f0f9ff;
       font-family: 'Inter', sans-serif;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      transition: all 0.18s ease;
+      transition: background-color 0.15s ease, border-color 0.15s ease;
       text-align: left;
     }
 
     .btn-snack-route:hover {
-      background: linear-gradient(135deg, rgba(6, 182, 212, 0.42), rgba(14, 116, 144, 0.68));
-      border-color: var(--route-cyan);
-      transform: translateY(-1px);
-      box-shadow: 0 6px 18px rgba(0, 240, 255, 0.25);
+      background: #075985;
+      border-color: var(--route-sky-bright);
     }
 
     .btn-snack-route.active {
-      background: linear-gradient(135deg, #0891b2, #0e7490);
-      border-color: #00f0ff;
+      background: #0369a1;
+      border-color: #7dd3fc;
       color: #ffffff;
-      box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
     }
 
-    .cyan-swatch {
-      width: 10px;
-      height: 10px;
+    .route-swatch {
+      width: 9px;
+      height: 9px;
       border-radius: 50%;
-      background: var(--route-cyan);
-      box-shadow: 0 0 8px var(--route-cyan);
+      background: var(--route-sky-bright);
       flex-shrink: 0;
     }
 
-    /* Toggle: Simulate Ramcharger 8 Wind Hold */
     .toggle-row {
       display: flex;
       align-items: center;
@@ -283,11 +264,11 @@
       gap: 10px;
       cursor: pointer;
       user-select: none;
-      padding: 4px 0;
+      padding: 2px 0;
     }
 
     .toggle-title {
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 600;
       color: var(--text-primary);
       line-height: 1.3;
@@ -303,8 +284,8 @@
     .switch {
       position: relative;
       display: inline-block;
-      width: 46px;
-      height: 25px;
+      width: 44px;
+      height: 24px;
       flex-shrink: 0;
     }
 
@@ -319,39 +300,36 @@
       cursor: pointer;
       inset: 0;
       background-color: #334155;
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      transition: 0.22s;
+      border: 1px solid #64748b;
+      transition: 0.2s;
       border-radius: 999px;
     }
 
     .slider:before {
       position: absolute;
       content: "";
-      height: 19px;
-      width: 19px;
+      height: 18px;
+      width: 18px;
       left: 2px;
       bottom: 2px;
       background-color: #f8fafc;
-      transition: 0.22s;
+      transition: 0.2s;
       border-radius: 50%;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.35);
     }
 
     input:checked + .slider {
       background-color: #16a34a;
       border-color: #4ade80;
-      box-shadow: 0 0 12px rgba(46, 204, 113, 0.45);
     }
 
     input:checked + .slider:before {
-      transform: translateX(21px);
+      transform: translateX(20px);
     }
 
-    /* Scenario Telemetry Readout */
     .telemetry-box {
-      background: rgba(2, 6, 23, 0.72);
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      border-radius: 10px;
+      background: #020617;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
       padding: 11px 12px;
       font-size: 11.5px;
       line-height: 1.45;
@@ -381,31 +359,30 @@
 
     .route-step-item {
       padding: 6px 8px;
-      border-radius: 7px;
-      background: rgba(15, 23, 42, 0.85);
+      border-radius: 5px;
+      background: #0f172a;
       border-left: 3px solid #38bdf8;
       font-size: 11px;
     }
 
     .route-step-item.step-red {
       border-left-color: var(--windhold-red);
-      background: rgba(69, 10, 10, 0.45);
+      background: #450a0a;
       color: #fecaca;
     }
 
     .route-step-item.step-green {
       border-left-color: var(--detour-green);
-      background: rgba(20, 83, 45, 0.45);
+      background: #052e16;
       color: #dcfce7;
     }
 
-    .route-step-item.step-cyan {
-      border-left-color: var(--route-cyan);
-      background: rgba(8, 51, 68, 0.55);
-      color: #cffafe;
+    .route-step-item.step-sky {
+      border-left-color: var(--route-sky-bright);
+      background: #082f49;
+      color: #e0f2fe;
     }
 
-    /* Action Row */
     .action-row {
       display: flex;
       gap: 8px;
@@ -414,35 +391,32 @@
     .btn-secondary {
       flex: 1;
       padding: 7px 10px;
-      border-radius: 8px;
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      background: rgba(30, 41, 59, 0.8);
+      border-radius: 6px;
+      border: 1px solid #475569;
+      background: #1e293b;
       color: var(--text-secondary);
       font-size: 11.5px;
       font-weight: 500;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: background-color 0.15s ease, color 0.15s ease;
     }
 
     .btn-secondary:hover {
-      background: rgba(51, 65, 85, 0.95);
+      background: #334155;
       color: #ffffff;
     }
 
-    /* Bottom-Left Map Legend & Layer Filter */
     .legend-panel {
       position: absolute;
       bottom: 22px;
       left: 16px;
       z-index: 1000;
       background: var(--bg-panel);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
       border: 1px solid var(--border-subtle);
-      border-radius: 14px;
+      border-radius: 10px;
       padding: 12px 15px;
-      box-shadow: 0 12px 32px rgba(2, 6, 23, 0.45);
-      min-width: 280px;
+      box-shadow: 0 8px 20px rgba(2, 6, 23, 0.45);
+      min-width: 285px;
     }
 
     .legend-title {
@@ -470,8 +444,16 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      cursor: pointer;
       user-select: none;
+    }
+
+    .legend-item.interactive {
+      cursor: pointer;
+    }
+
+    .legend-item.layer-hidden {
+      opacity: 0.42;
+      text-decoration: line-through;
     }
 
     .legend-line {
@@ -494,100 +476,104 @@
 
     .legend-divider {
       height: 1px;
-      background: rgba(148, 163, 184, 0.16);
+      background: var(--border-subtle);
       margin: 9px 0;
     }
 
-    /* Custom Venue Marker Icons */
+    .legend-chip {
+      width: 20px;
+      height: 16px;
+      border-radius: 3px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 700;
+      color: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
     .venue-marker-wrapper {
       background: transparent;
       border: none;
     }
 
     .venue-badge {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
+      width: 30px;
+      height: 22px;
+      border-radius: 5px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
-      border: 2px solid #ffffff;
-      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+      border: 1.5px solid #ffffff;
+      transition: transform 0.15s ease;
       position: relative;
+      color: #ffffff;
     }
 
     .venue-badge:hover {
-      transform: scale(1.18);
+      transform: scale(1.12);
       z-index: 999 !important;
     }
 
-    .venue-badge.badge-snack {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: #fff;
+    .badge-snack {
+      background: #c2410c;
     }
 
-    .venue-badge.badge-sitdown {
-      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-      color: #fff;
+    .badge-sitdown {
+      background: #0f766e;
     }
 
-    .venue-badge.badge-patrol {
-      background: linear-gradient(135deg, #ef4444, #b91c1c);
-      color: #fff;
+    .badge-patrol {
+      background: #b91c1c;
     }
 
-    .venue-badge.badge-hut {
-      background: linear-gradient(135deg, #0ea5e9, #0369a1);
-      color: #fff;
+    .badge-hut {
+      background: #334155;
     }
 
     .venue-badge.highlight-target {
-      border-color: var(--route-cyan);
-      box-shadow: 0 0 0 5px rgba(0, 240, 255, 0.35), 0 0 22px #00f0ff;
-      animation: pulse-cyan 1.6s infinite;
+      border-color: #38bdf8;
+      outline: 3px solid rgba(56, 189, 248, 0.55);
     }
 
-    @keyframes pulse-cyan {
-      0% { box-shadow: 0 0 0 0 rgba(0, 240, 255, 0.7), 0 0 18px #00f0ff; }
-      70% { box-shadow: 0 0 0 14px rgba(0, 240, 255, 0), 0 0 24px #00f0ff; }
-      100% { box-shadow: 0 0 0 0 rgba(0, 240, 255, 0), 0 0 18px #00f0ff; }
-    }
-
-    /* Callout Banners on Map */
     .scenario-map-callout {
-      background: rgba(15, 23, 42, 0.94);
+      background: #0f172a;
       color: #f8fafc;
       border: 1.5px solid #38bdf8;
-      border-radius: 8px;
+      border-radius: 6px;
       padding: 4px 8px;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 600;
       white-space: nowrap;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
     }
 
     .scenario-map-callout.callout-red {
       border-color: #ef4444;
-      background: rgba(127, 29, 29, 0.95);
+      background: #450a0a;
       color: #fecaca;
     }
 
     .scenario-map-callout.callout-green {
-      border-color: #2ecc71;
-      background: rgba(20, 83, 45, 0.95);
+      border-color: #22c55e;
+      background: #052e16;
       color: #dcfce7;
     }
 
-    .scenario-map-callout.callout-cyan {
-      border-color: #00f0ff;
-      background: rgba(8, 51, 68, 0.95);
-      color: #cffafe;
+    .scenario-map-callout.callout-sky {
+      border-color: #38bdf8;
+      background: #082f49;
+      color: #e0f2fe;
     }
 
-    /* Animated Route Flow */
     .animated-route-line {
       animation: dash-flow 1.2s linear infinite;
     }
@@ -598,21 +584,20 @@
       }
     }
 
-    /* Leaflet Popup Styling */
     .leaflet-popup-content-wrapper {
-      background: rgba(15, 23, 42, 0.96);
+      background: #0f172a;
       color: #f8fafc;
-      border: 1px solid rgba(148, 163, 184, 0.28);
-      border-radius: 12px;
-      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+      border: 1px solid #334155;
+      border-radius: 8px;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
     }
 
     .leaflet-popup-tip {
-      background: rgba(15, 23, 42, 0.96);
+      background: #0f172a;
     }
 
     .popup-title {
-      font-size: 13.5px;
+      font-size: 13px;
       font-weight: 700;
       margin-bottom: 4px;
       color: #ffffff;
@@ -631,7 +616,7 @@
     .popup-badge {
       display: inline-block;
       padding: 2px 7px;
-      border-radius: 5px;
+      border-radius: 4px;
       font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
@@ -650,21 +635,19 @@
 </head>
 <body>
 
-  <!-- Leaflet Map Container -->
   <div id="map" role="region" aria-label="Big Sky Resort Interactive Topological Map"></div>
 
-  <!-- Top-Left Brand & Live Dataset Status -->
   <header class="brand-overlay">
     <div class="brand-title-row">
-      <div class="brand-badge" aria-hidden="true">🏔️</div>
+      <div class="brand-badge" aria-hidden="true">BSR</div>
       <div>
         <h1>Project Cirque — Big Sky Spatial Harness</h1>
-        <div class="brand-subtitle">Milestones 1–3 Visual Verification • [45.285, -111.401]</div>
+        <div class="brand-subtitle">Milestones 1–3 Verification • [45.285, -111.401]</div>
       </div>
     </div>
     <div class="stats-bar">
       <span class="stat-pill" id="stat-geojson">
-        <span class="stat-dot" style="background:#2ecc71;"></span>
+        <span class="stat-dot" style="background:#16a34a;"></span>
         GeoJSON: Loading...
       </span>
       <span class="stat-pill" id="stat-sqlite">
@@ -672,24 +655,22 @@
         SQLite POIs: Loading...
       </span>
       <span class="stat-pill">
-        <span class="stat-dot" style="background:#f39c12;"></span>
+        <span class="stat-dot" style="background:#d97706;"></span>
         PRAGMA query_only = ON
       </span>
     </div>
   </header>
 
-  <!-- Top-Right Interactive Scenario Control Panel -->
   <aside class="scenario-panel" id="scenario-control-panel" aria-label="Scenario Control Panel">
     <div class="panel-header">
-      <h2>⚡ Scenario Control Panel</h2>
-      <span class="milestone-tag">M1–M3 LIVE</span>
+      <h2>Scenario Verification</h2>
+      <span class="milestone-tag">M1–M3 VERIFIED</span>
     </div>
 
-    <!-- Scenario 1: Intermediate Snack Route -->
     <div class="control-card" id="card-snack-route">
       <div class="control-label">
-        <span>MILESTONE 3.4 • MULTI-TARGET AMENITY ROUTER</span>
-        <span style="color:#00f0ff;">13:15 MST</span>
+        <span>STEP 3.4 • 1-TO-N AMENITY ROUTER</span>
+        <span style="color:#38bdf8;">13:15 MST</span>
       </div>
       <button
         type="button"
@@ -698,53 +679,50 @@
         onclick="triggerIntermediateSnackRoute()"
       >
         <span style="display:flex;align-items:center;gap:9px;">
-          <span class="cyan-swatch"></span>
+          <span class="route-swatch"></span>
           <span>Simulate: Intermediate Snack Route</span>
         </span>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;opacity:0.9;">🍔 → Cyan</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#7dd3fc;">112.0s</span>
       </button>
       <div style="font-size:11px;color:var(--text-muted);margin-top:7px;line-height:1.35;">
-        Filters open <code style="color:#67e8f9;">grab_and_go</code> venues without reservations &amp; highlights optimal blue cruiser path to <strong>Shedhorn Grill</strong> in bright cyan.
+        Filters open <code style="color:#7dd3fc;">grab_and_go</code> venues without reservations and renders the blue cruiser route to <strong>Shedhorn Grill</strong>.
       </div>
     </div>
 
-    <!-- Scenario 2: Ramcharger 8 Wind Hold Toggle -->
     <div class="control-card" id="card-wind-hold">
       <div class="control-label">
-        <span>MILESTONE 3.3 • DYNAMIC STATUS OVERLAY</span>
+        <span>STEP 3.3 • RAM STATUS OVERLAY</span>
         <span id="wind-hold-status-badge" style="color:#94a3b8;">NORMAL (OPEN)</span>
       </div>
       <label class="toggle-row" for="toggle-ramcharger-wind-hold">
         <div>
           <div class="toggle-title">Simulate: Ramcharger 8 Wind Hold</div>
           <div class="toggle-desc">
-            Marks <strong>Path A (Ramcharger 8)</strong> <span style="color:#f87171;font-weight:600;">RED</span> &amp; dynamically renders <span style="color:#4ade80;font-weight:600;">GREEN detour</span> via <strong>Swift Current 6</strong>.
+            Masks <strong>Path A (Ramcharger 8)</strong> in <span style="color:#f87171;font-weight:600;">red</span> and renders <span style="color:#4ade80;font-weight:600;">green detour</span> via <strong>Swift Current 6</strong>.
           </div>
         </div>
         <span class="switch">
           <input
             type="checkbox"
             id="toggle-ramcharger-wind-hold"
-             onchange="toggleRamchargerWindHold(this.checked)"
+            onchange="toggleRamchargerWindHold(this.checked)"
           />
           <span class="slider"></span>
         </span>
       </label>
     </div>
 
-    <!-- Live Scenario & Solver Telemetry Box -->
     <div class="telemetry-box" id="scenario-telemetry">
       <div class="telemetry-header">
         <span id="telemetry-title">SOLVER TELEMETRY IDLE</span>
         <span id="telemetry-latency">0.09ms</span>
       </div>
       <div id="telemetry-body">
-        Select a scenario above to inspect real-time Dijkstra pathfinding, temporal SQLite venue filtering, or wind-hold edge masking on Big Sky Resort.
+        Select a scenario above to inspect multi-criteria Dijkstra pathfinding, operating-hours SQLite filtering, or RAM wind-hold edge masking on Big Sky Resort.
       </div>
       <ul class="route-step-list" id="telemetry-steps"></ul>
     </div>
 
-    <!-- Utility Controls -->
     <div class="action-row">
       <button type="button" class="btn-secondary" id="btn-show-baseline-ramcharger" onclick="previewBaselinePathA()">
         Preview Path A (Normal)
@@ -755,59 +733,54 @@
     </div>
   </aside>
 
-  <!-- Bottom-Left Map Legend -->
   <section class="legend-panel" aria-label="Map Symbology Legend">
     <div class="legend-title">
-      <span>Big Sky Symbology &amp; POIs</span>
+      <span>Trail Symbology (Click to Filter)</span>
       <span id="feature-counter" style="color:#38bdf8;">782 Features</span>
     </div>
     <div class="legend-grid">
-      <div class="legend-item" onclick="toggleLayerGroup('novice')">
-        <span class="legend-line" style="background:#2ecc71;"></span>
+      <div class="legend-item interactive" id="legend-toggle-novice" onclick="toggleLayerGroup('novice')">
+        <span class="legend-line" style="background:#16a34a;"></span>
         <span>Novice (Green)</span>
       </div>
-      <div class="legend-item" onclick="toggleLayerGroup('intermediate')">
-        <span class="legend-line" style="background:#3498db;"></span>
+      <div class="legend-item interactive" id="legend-toggle-intermediate" onclick="toggleLayerGroup('intermediate')">
+        <span class="legend-line" style="background:#2563eb;"></span>
         <span>Intermediate (Blue)</span>
       </div>
-      <div class="legend-item" onclick="toggleLayerGroup('black')">
-        <span class="legend-line" style="background:#2c3e50;border:1px solid #94a3b8;"></span>
+      <div class="legend-item interactive" id="legend-toggle-black" onclick="toggleLayerGroup('black')">
+        <span class="legend-line" style="background:#1e293b;border:1px solid #94a3b8;"></span>
         <span>Adv / Expert (Black)</span>
       </div>
-      <div class="legend-item" onclick="toggleLayerGroup('lift')">
+      <div class="legend-item interactive" id="legend-toggle-lift" onclick="toggleLayerGroup('lift')">
         <span class="legend-line lift-dotted"></span>
-        <span>Aerial Lifts (Gold)</span>
+        <span>Aerial Lifts (Amber)</span>
       </div>
     </div>
     <div class="legend-divider"></div>
     <div class="legend-grid">
       <div class="legend-item">
-        <span>🍔</span>
-        <span>Snack / Quick-Serve</span>
+        <span class="legend-chip badge-snack">SNK</span>
+        <span>Quick-Serve / Bar</span>
       </div>
       <div class="legend-item">
-        <span>🍴</span>
+        <span class="legend-chip badge-sitdown">DIN</span>
         <span>Sit-Down Dining</span>
       </div>
       <div class="legend-item">
-        <span>➕</span>
+        <span class="legend-chip badge-patrol">PTL</span>
         <span>Ski Patrol Shack</span>
       </div>
       <div class="legend-item">
-        <span>🔥</span>
-        <span>Warming Hut / Restroom</span>
+        <span class="legend-chip badge-hut">HUT</span>
+        <span>Warming / Restroom</span>
       </div>
     </div>
   </section>
 
   <script>
-    // =========================================================================
-    // 1. INITIALIZE LEAFLET MAP CENTERED ON BIG SKY RESORT [45.285, -111.401]
-    // =========================================================================
     const BIG_SKY_CENTER = [45.285, -111.401];
     const DEFAULT_ZOOM = 14;
 
-    // Outdoor / Topographic Tile Layers
     const openTopoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
       maxZoom: 17,
       attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap (CC-BY-SA)'
@@ -830,7 +803,6 @@
       zoomControl: true
     });
 
-    // Automatic fallback to Esri/USGS Topo if OpenTopoMap tiles rate-limit
     let topoTileErrorCount = 0;
     openTopoLayer.on('tileerror', () => {
       topoTileErrorCount += 1;
@@ -842,7 +814,7 @@
 
     L.control.layers(
       {
-        'OpenTopoMap (Outdoor Contours)': openTopoLayer,
+        'OpenTopoMap (Contours)': openTopoLayer,
         'USGS National Topo (3DEP)': usgsTopoLayer,
         'Esri World Topographic': esriTopoLayer
       },
@@ -850,7 +822,6 @@
       { position: 'bottomright' }
     ).addTo(map);
 
-    // Layer Groups by Difficulty & Role
     const layerGroups = {
       novice: L.layerGroup().addTo(map),
       intermediate: L.layerGroup().addTo(map),
@@ -870,20 +841,16 @@
 
     function toggleLayerGroup(key) {
       layerVisibility[key] = !layerVisibility[key];
+      const legendEl = document.getElementById(`legend-toggle-${key}`);
       if (layerVisibility[key]) {
         map.addLayer(layerGroups[key]);
+        if (legendEl) legendEl.classList.remove('layer-hidden');
       } else {
         map.removeLayer(layerGroups[key]);
+        if (legendEl) legendEl.classList.add('layer-hidden');
       }
     }
 
-    // =========================================================================
-    // 2. LOAD & RENDER `data/raw/big_sky_raw.geojson`
-    //    - Green (#2ecc71) for novice
-    //    - Blue (#3498db) for intermediate
-    //    - Black (#2c3e50) for advanced/expert
-    //    - Gold/Dotted (#f39c12) for lifts
-    // =========================================================================
     function getFeatureStyle(feature) {
       const props = (feature && feature.properties) || {};
       const type = props.type || props.feature_type || (props.aerialway ? 'lift' : 'piste');
@@ -891,7 +858,7 @@
 
       if (type === 'lift' || diff === 'lift') {
         return {
-          color: '#f39c12',
+          color: '#d97706',
           weight: 3.4,
           opacity: 0.95,
           dashArray: '7, 6',
@@ -901,7 +868,7 @@
 
       if (diff === 'novice' || diff === 'easy') {
         return {
-          color: '#2ecc71',
+          color: '#16a34a',
           weight: 3.0,
           opacity: 0.88,
           lineCap: 'round',
@@ -911,7 +878,7 @@
 
       if (diff === 'intermediate') {
         return {
-          color: '#3498db',
+          color: '#2563eb',
           weight: 3.0,
           opacity: 0.88,
           lineCap: 'round',
@@ -919,9 +886,8 @@
         };
       }
 
-      // Advanced, Expert, Freeride -> Black (#2c3e50)
       return {
-        color: '#2c3e50',
+        color: '#1e293b',
         weight: 2.8,
         opacity: 0.88,
         lineCap: 'round',
@@ -954,8 +920,8 @@
             geojsonData = await resp.json();
             break;
           }
-        } catch (_) {
-          // Try next relative path
+        } catch (err) {
+          console.warn('GeoJSON candidate fetch failed:', url, err);
         }
       }
 
@@ -969,7 +935,6 @@
       let liftCount = 0;
 
       geojsonData.features.forEach((feature) => {
-        const props = feature.properties || {};
         const groupKey = getTargetGroupKey(feature);
         if (groupKey === 'lift') liftCount++;
         else pisteCount++;
@@ -983,12 +948,12 @@
             const diff = p.difficulty || p['piste:difficulty'] || fType;
             const badgeBg =
               fType === 'lift'
-                ? '#f39c12'
+                ? '#d97706'
                 : diff === 'novice'
-                ? '#2ecc71'
+                ? '#16a34a'
                 : diff === 'intermediate'
-                ? '#3498db'
-                : '#2c3e50';
+                ? '#2563eb'
+                : '#334155';
 
             lyr.bindPopup(`
               <div>
@@ -1017,56 +982,49 @@
       });
 
       document.getElementById('stat-geojson').innerHTML =
-        `<span class="stat-dot" style="background:#2ecc71;"></span> ${pisteCount} Pistes • ${liftCount} Lifts`;
+        `<span class="stat-dot" style="background:#16a34a;"></span> ${pisteCount} Pistes • ${liftCount} Lifts`;
       document.getElementById('feature-counter').textContent =
         `${geojsonData.features.length} GeoJSON Features`;
     }
 
-    // =========================================================================
-    // 3. QUERY `data/compiled/topology.sqlite` FOR `mountain_services`
-    //    - Burger icon (🍔) for snack bars (quick_snack / cafeteria / bar)
-    //    - Fork/Knife icon (🍴) for sit-down (sit_down)
-    //    - Red Cross icon (➕) for patrol (patrol)
-    // =========================================================================
     const FALLBACK_SQLITE_SERVICES = [
-      { service_id: 'srv_shedhorn_grill', node_id: 'node_jct_0011', name: 'Shedhorn Grill', category: 'quick_snack', service_speed: 'grab_and_go', open_time_local: '11:00', close_time_local: '15:30', requires_reservation: 0, price_tier: '$$', is_ski_in_only: 1, daily_status: 'open', lat: 45.263, lon: -111.439, elevation_m: 2710.0, node_name: 'Shedhorn Trail Junction' },
-      { service_id: 'srv_headwaters_grille', node_id: 'node_poi_srv_headwaters_grille', name: 'Headwaters Grille', category: 'quick_snack', service_speed: 'counter_service', open_time_local: '08:00', close_time_local: '17:00', requires_reservation: 0, price_tier: '$$', is_ski_in_only: 0, daily_status: 'open', lat: 45.28416, lon: -111.40112, elevation_m: 2286.0, node_name: 'Headwaters Grille' },
-      { service_id: 'srv_uncle_dans_cookies', node_id: 'node_village_mountain_village', name: "Uncle Dan's Cookie Hut", category: 'quick_snack', service_speed: 'grab_and_go', open_time_local: '09:30', close_time_local: '15:30', requires_reservation: 0, price_tier: '$', is_ski_in_only: 1, daily_status: 'open', lat: 45.284, lon: -111.401, elevation_m: 2286.0, node_name: 'Mountain Village Base' },
-      { service_id: 'srv_everetts_8800', node_id: 'node_jct_001', name: "Everett's 8800", category: 'sit_down', service_speed: 'table_service', open_time_local: '11:00', close_time_local: '15:00', requires_reservation: 1, price_tier: '$$$', is_ski_in_only: 1, daily_status: 'open', lat: 45.273, lon: -111.412, elevation_m: 2682.0, node_name: 'Andesite Summit' },
-      { service_id: 'srv_vista_hall', node_id: 'node_village_mountain_village', name: 'Vista Hall', category: 'cafeteria', service_speed: 'counter_service', open_time_local: '08:00', close_time_local: '17:00', requires_reservation: 0, price_tier: '$$', is_ski_in_only: 0, daily_status: 'open', lat: 45.284, lon: -111.401, elevation_m: 2286.0, node_name: 'Mountain Village Base' },
-      { service_id: 'srv_montana_jack', node_id: 'node_village_mountain_village', name: 'Montana Jack', category: 'bar', service_speed: 'table_service', open_time_local: '11:00', close_time_local: '22:00', requires_reservation: 0, price_tier: '$$', is_ski_in_only: 0, daily_status: 'open', lat: 45.284, lon: -111.401, elevation_m: 2286.0, node_name: 'Mountain Village Base' },
-      { service_id: 'srv_patrol_summit', node_id: 'node_summit_lone_peak', name: 'Lone Peak Summit Patrol Shack', category: 'patrol', service_speed: null, open_time_local: '08:30', close_time_local: '16:30', requires_reservation: 0, price_tier: null, is_ski_in_only: 1, daily_status: 'open', lat: 45.2785, lon: -111.451, elevation_m: 3403.0, node_name: 'Lone Peak Summit' },
-      { service_id: 'srv_patrol_swift_current', node_id: 'node_jct_0006', name: 'Swift Current Patrol Shack', category: 'patrol', service_speed: null, open_time_local: '08:30', close_time_local: '16:30', requires_reservation: 0, price_tier: null, is_ski_in_only: 1, daily_status: 'open', lat: 45.2795, lon: -111.4265, elevation_m: 2810.0, node_name: 'Africa Top' },
-      { service_id: 'srv_patrol_andesite', node_id: 'node_jct_001', name: 'Andesite Summit Patrol Station', category: 'patrol', service_speed: null, open_time_local: '08:30', close_time_local: '16:30', requires_reservation: 0, price_tier: null, is_ski_in_only: 1, daily_status: 'open', lat: 45.273, lon: -111.412, elevation_m: 2682.0, node_name: 'Andesite Summit' },
-      { service_id: 'srv_patrol_shedhorn', node_id: 'node_jct_0011', name: 'Shedhorn Patrol Shack', category: 'patrol', service_speed: null, open_time_local: '08:30', close_time_local: '16:30', requires_reservation: 0, price_tier: null, is_ski_in_only: 1, daily_status: 'open', lat: 45.263, lon: -111.439, elevation_m: 2710.0, node_name: 'Shedhorn Trail Junction' },
-      { service_id: 'srv_patrol_village_base', node_id: 'node_village_mountain_village', name: 'Mountain Village Ski Patrol Base', category: 'patrol', service_speed: null, open_time_local: '08:30', close_time_local: '16:30', requires_reservation: 0, price_tier: null, is_ski_in_only: 0, daily_status: 'open', lat: 45.284, lon: -111.401, elevation_m: 2286.0, node_name: 'Mountain Village Base' },
-      { service_id: 'srv_warming_hut_andesite', node_id: 'node_jct_001', name: 'Andesite Summit Warming Hut', category: 'warming_hut', service_speed: null, open_time_local: '09:00', close_time_local: '16:00', requires_reservation: 0, price_tier: null, is_ski_in_only: 1, daily_status: 'open', lat: 45.273, lon: -111.412, elevation_m: 2682.0, node_name: 'Andesite Summit' },
-      { service_id: 'srv_warming_hut_village', node_id: 'node_village_mountain_village', name: 'Mountain Village Warming Center', category: 'warming_hut', service_speed: null, open_time_local: '08:00', close_time_local: '18:00', requires_reservation: 0, price_tier: null, is_ski_in_only: 0, daily_status: 'open', lat: 45.284, lon: -111.401, elevation_m: 2286.0, node_name: 'Mountain Village Base' },
-      { service_id: 'srv_restroom_village', node_id: 'node_village_mountain_village', name: 'Mountain Village Public Restrooms', category: 'restroom', service_speed: null, open_time_local: '07:00', close_time_local: '22:00', requires_reservation: 0, price_tier: null, is_ski_in_only: 0, daily_status: 'open', lat: 45.284, lon: -111.401, elevation_m: 2286.0, node_name: 'Mountain Village Base' },
-      { service_id: 'srv_restroom_andesite', node_id: 'node_jct_001', name: 'Andesite Top Restrooms', category: 'restroom', service_speed: null, open_time_local: '09:00', close_time_local: '16:00', requires_reservation: 0, price_tier: null, is_ski_in_only: 1, daily_status: 'open', lat: 45.273, lon: -111.412, elevation_m: 2682.0, node_name: 'Andesite Summit' }
+      { service_id: 'srv_shedhorn_grill', node_id: 'node_jct_0011', name: 'Shedhorn Grill', category: 'quick_snack', service_speed: 'grab_and_go', open_time_local: '11:00', close_time_local: '15:30', requires_reservation: 0, price_tier: '$$', is_ski_in_only: 1, daily_status: 'open', lat: 45.263, lon: -111.439, elevation_m: 2710.0 },
+      { service_id: 'srv_headwaters_grille', node_id: 'node_poi_srv_headwaters_grille', name: 'Headwaters Grille', category: 'quick_snack', service_speed: 'counter_service', open_time_local: '08:00', close_time_local: '17:00', requires_reservation: 0, price_tier: '$$', is_ski_in_only: 0, daily_status: 'open', lat: 45.28416, lon: -111.40112, elevation_m: 2286.0 },
+      { service_id: 'srv_uncle_dans_cookies', node_id: 'node_village_mountain_village', name: "Uncle Dan's Cookie Hut", category: 'quick_snack', service_speed: 'grab_and_go', open_time_local: '09:30', close_time_local: '15:30', requires_reservation: 0, price_tier: '$', is_ski_in_only: 1, daily_status: 'open', lat: 45.28395, lon: -111.40115, elevation_m: 2286.0 },
+      { service_id: 'srv_everetts_8800', node_id: 'node_jct_001', name: "Everett's 8800", category: 'sit_down', service_speed: 'table_service', open_time_local: '11:00', close_time_local: '15:00', requires_reservation: 1, price_tier: '$$$', is_ski_in_only: 1, daily_status: 'open', lat: 45.273, lon: -111.412, elevation_m: 2682.0 },
+      { service_id: 'srv_vista_hall', node_id: 'node_village_mountain_village', name: 'Vista Hall', category: 'cafeteria', service_speed: 'counter_service', open_time_local: '08:00', close_time_local: '17:00', requires_reservation: 0, price_tier: '$$', is_ski_in_only: 0, daily_status: 'open', lat: 45.284, lon: -111.401, elevation_m: 2286.0 },
+      { service_id: 'srv_montana_jack', node_id: 'node_village_mountain_village', name: 'Montana Jack', category: 'bar', service_speed: 'table_service', open_time_local: '11:00', close_time_local: '22:00', requires_reservation: 0, price_tier: '$$', is_ski_in_only: 0, daily_status: 'open', lat: 45.28405, lon: -111.40105, elevation_m: 2286.0 },
+      { service_id: 'srv_patrol_summit', node_id: 'node_summit_lone_peak', name: 'Lone Peak Summit Patrol Shack', category: 'patrol', service_speed: null, open_time_local: '08:30', close_time_local: '16:30', requires_reservation: 0, price_tier: null, is_ski_in_only: 1, daily_status: 'open', lat: 45.2785, lon: -111.451, elevation_m: 3403.0 },
+      { service_id: 'srv_patrol_swift_current', node_id: 'node_jct_0006', name: 'Swift Current Patrol Shack', category: 'patrol', service_speed: null, open_time_local: '08:30', close_time_local: '16:30', requires_reservation: 0, price_tier: null, is_ski_in_only: 1, daily_status: 'open', lat: 45.2795, lon: -111.4265, elevation_m: 2810.0 },
+      { service_id: 'srv_patrol_andesite', node_id: 'node_jct_001', name: 'Andesite Summit Patrol Station', category: 'patrol', service_speed: null, open_time_local: '08:30', close_time_local: '16:30', requires_reservation: 0, price_tier: null, is_ski_in_only: 1, daily_status: 'open', lat: 45.273, lon: -111.412, elevation_m: 2682.0 },
+      { service_id: 'srv_patrol_shedhorn', node_id: 'node_jct_0011', name: 'Shedhorn Patrol Shack', category: 'patrol', service_speed: null, open_time_local: '08:30', close_time_local: '16:30', requires_reservation: 0, price_tier: null, is_ski_in_only: 1, daily_status: 'open', lat: 45.263, lon: -111.439, elevation_m: 2710.0 },
+      { service_id: 'srv_patrol_village_base', node_id: 'node_village_mountain_village', name: 'Mountain Village Ski Patrol Base', category: 'patrol', service_speed: null, open_time_local: '08:30', close_time_local: '16:30', requires_reservation: 0, price_tier: null, is_ski_in_only: 0, daily_status: 'open', lat: 45.284, lon: -111.401, elevation_m: 2286.0 },
+      { service_id: 'srv_warming_hut_andesite', node_id: 'node_jct_001', name: 'Andesite Summit Warming Hut', category: 'warming_hut', service_speed: null, open_time_local: '09:00', close_time_local: '16:00', requires_reservation: 0, price_tier: null, is_ski_in_only: 1, daily_status: 'open', lat: 45.273, lon: -111.412, elevation_m: 2682.0 },
+      { service_id: 'srv_warming_hut_village', node_id: 'node_village_mountain_village', name: 'Mountain Village Warming Center', category: 'warming_hut', service_speed: null, open_time_local: '08:00', close_time_local: '18:00', requires_reservation: 0, price_tier: null, is_ski_in_only: 0, daily_status: 'open', lat: 45.284, lon: -111.401, elevation_m: 2286.0 },
+      { service_id: 'srv_restroom_village', node_id: 'node_village_mountain_village', name: 'Mountain Village Public Restrooms', category: 'restroom', service_speed: null, open_time_local: '07:00', close_time_local: '22:00', requires_reservation: 0, price_tier: null, is_ski_in_only: 0, daily_status: 'open', lat: 45.284, lon: -111.401, elevation_m: 2286.0 },
+      { service_id: 'srv_restroom_andesite', node_id: 'node_jct_001', name: 'Andesite Top Restrooms', category: 'restroom', service_speed: null, open_time_local: '09:00', close_time_local: '16:00', requires_reservation: 0, price_tier: null, is_ski_in_only: 1, daily_status: 'open', lat: 45.273, lon: -111.412, elevation_m: 2682.0 }
     ];
 
     const serviceMarkersById = {};
 
-    function getVenueIconMeta(category) {
+    function getVenueBadgeMeta(category) {
       switch (category) {
         case 'quick_snack':
         case 'cafeteria':
         case 'bar':
-          return { emoji: '🍔', cssClass: 'badge-snack', label: 'Snack / Quick-Serve' };
+          return { code: 'SNK', cssClass: 'badge-snack' };
         case 'sit_down':
-          return { emoji: '🍴', cssClass: 'badge-sitdown', label: 'Sit-Down Restaurant' };
+          return { code: 'DIN', cssClass: 'badge-sitdown' };
         case 'patrol':
-          return { emoji: '➕', cssClass: 'badge-patrol', label: 'Ski Patrol' };
+          return { code: 'PTL', cssClass: 'badge-patrol' };
         default:
-          return { emoji: '🔥', cssClass: 'badge-hut', label: 'Warming Hut / Restroom' };
+          return { code: 'HUT', cssClass: 'badge-hut' };
       }
     }
 
     function renderMountainServices(services) {
       layerGroups.services.clearLayers();
 
-      // Group co-located services by coordinate key so markers at the same junction fan out cleanly
       const coordBuckets = {};
       services.forEach((srv) => {
         const key = `${srv.lat.toFixed(4)},${srv.lon.toFixed(4)}`;
@@ -1080,43 +1038,39 @@
           let displayLat = srv.lat;
           let displayLon = srv.lon;
 
-          // Keep primary anchor venues centered; fan out secondary co-located POIs slightly
           if (total > 1 && idx > 0) {
             const angle = (2 * Math.PI * idx) / total;
-            const radiusLat = 0.00065;
-            const radiusLon = 0.0009;
-            displayLat = srv.lat + Math.sin(angle) * radiusLat;
-            displayLon = srv.lon + Math.cos(angle) * radiusLon;
+            displayLat = srv.lat + Math.sin(angle) * 0.00065;
+            displayLon = srv.lon + Math.cos(angle) * 0.0009;
 
-            // Subtle connector spoke to snapped node coordinate
             L.polyline(
               [
                 [srv.lat, srv.lon],
                 [displayLat, displayLon]
               ],
               {
-                color: '#94a3b8',
+                color: '#64748b',
                 weight: 1.3,
                 dashArray: '3, 3',
-                opacity: 0.7
+                opacity: 0.75
               }
             ).addTo(layerGroups.services);
           }
 
-          const meta = getVenueIconMeta(srv.category);
+          const meta = getVenueBadgeMeta(srv.category);
           const icon = L.divIcon({
             className: 'venue-marker-wrapper',
-            html: `<div class="venue-badge ${meta.cssClass}" id="marker-${srv.service_id}" title="${srv.name}">${meta.emoji}</div>`,
-            iconSize: [32, 32],
-            iconAnchor: [16, 16],
-            popupAnchor: [0, -16]
+            html: `<div class="venue-badge ${meta.cssClass}" id="marker-${srv.service_id}" title="${srv.name}">${meta.code}</div>`,
+            iconSize: [30, 22],
+            iconAnchor: [15, 11],
+            popupAnchor: [0, -12]
           });
 
           const marker = L.marker([displayLat, displayLon], { icon }).addTo(layerGroups.services);
           marker.bindPopup(`
             <div>
-              <div class="popup-title">${meta.emoji} ${srv.name}</div>
-              <span class="popup-badge" style="background:#334155;color:#38bdf8;">
+              <div class="popup-title">${srv.name}</div>
+              <span class="popup-badge" style="background:#1e293b;color:#38bdf8;">
                 ${srv.category.toUpperCase()}${srv.service_speed ? ' • ' + srv.service_speed.toUpperCase() : ''}
               </span>
               <div class="popup-meta">
@@ -1152,18 +1106,12 @@
             return;
           }
         }
-      } catch (_) {
-        // Fallback to embedded topology.sqlite rows if opened without the Python API route
+      } catch (err) {
+        console.warn('SQLite /api/services unavailable; using embedded fallback dataset:', err);
       }
       renderMountainServices(FALLBACK_SQLITE_SERVICES);
     }
 
-    // =========================================================================
-    // 4. SCENARIO GEOMETRIES & INTERACTIVE CONTROL PANEL LOGIC
-    // =========================================================================
-
-    // Exact multi-vertex coordinates from data/raw/big_sky_raw.geojson & topology.sqlite
-    // Path A: Ramcharger 8 - High Speed (OSM ID 5759657) -> Andesite Summit / Everett's 8800
     const PATH_A_RAMCHARGER_COORDS = [
       [45.284, -111.401],
       [45.282929, -111.401192],
@@ -1181,11 +1129,9 @@
       [45.274015, -111.396428],
       [45.273435, -111.396117],
       [45.272474, -111.39559],
-      [45.271901, -111.395278],
-      [45.273, -111.412]
+      [45.271901, -111.395278]
     ];
 
-    // Path B (Wind-Hold Detour): Swift Current 6 (OSM ID 843634522) -> Intermediate Connector -> Andesite Summit / Everett's 8800
     const PATH_B_SWIFT_CURRENT_DETOUR_COORDS = [
       [45.284, -111.401],
       [45.283226, -111.402029],
@@ -1210,7 +1156,6 @@
       [45.276093, -111.42867],
       [45.275665, -111.430271],
       [45.275222, -111.431925],
-      // Intermediate connector (Lobo Meadows / Silver Knife / Andesite Connector) -> Andesite Summit (node_jct_001)
       [45.275173, -111.429761],
       [45.275233, -111.428741],
       [45.2795, -111.4265],
@@ -1218,8 +1163,6 @@
       [45.273, -111.412]
     ];
 
-    // Intermediate Snack Route to Shedhorn Grill (node_jct_0011: [45.263, -111.439])
-    // Traverses intermediate blue cruisers (Duck Walk -> Upper Sunlight -> Sunlight -> Shedhorn Trail) to Shedhorn Grill
     const INTERMEDIATE_SNACK_ROUTE_COORDS = [
       [45.275222, -111.431925],
       [45.275343, -111.43213],
@@ -1237,7 +1180,6 @@
       [45.273524, -111.442482],
       [45.273167, -111.44355],
       [45.272923, -111.443946],
-      // Upper Sunlight & Shedhorn Trail (Intermediate Blue) -> Shedhorn Grill [45.263, -111.439]
       [45.272414, -111.445603],
       [45.27141, -111.446657],
       [45.269869, -111.446154],
@@ -1260,58 +1202,54 @@
 
       if (!snackRouteActive) {
         btn.classList.remove('active');
-        card.classList.remove('active-cyan');
+        card.classList.remove('active-route');
         if (shedhornBadge) shedhornBadge.classList.remove('highlight-target');
         updateIdleTelemetryIfNeeded();
         return;
       }
 
       btn.classList.add('active');
-      card.classList.add('active-cyan');
+      card.classList.add('active-route');
 
-      // Outer Cyan Glow Halo
       L.polyline(INTERMEDIATE_SNACK_ROUTE_COORDS, {
-        color: '#00f0ff',
-        weight: 13,
-        opacity: 0.28,
+        color: '#0369a1',
+        weight: 10,
+        opacity: 0.35,
         lineCap: 'round',
         lineJoin: 'round'
       }).addTo(layerGroups.scenarioSnack);
 
-      // Core Bright Cyan Route Line
       L.polyline(INTERMEDIATE_SNACK_ROUTE_COORDS, {
-        color: '#00f0ff',
-        weight: 5.5,
+        color: '#38bdf8',
+        weight: 5,
         opacity: 1.0,
         lineCap: 'round',
         lineJoin: 'round'
       }).addTo(layerGroups.scenarioSnack);
 
-      // Animated Directional Flow Overlay
       L.polyline(INTERMEDIATE_SNACK_ROUTE_COORDS, {
         color: '#ffffff',
-        weight: 2.5,
+        weight: 2,
         opacity: 0.9,
         dashArray: '8, 20',
         className: 'animated-route-line'
       }).addTo(layerGroups.scenarioSnack);
 
-      // Start & End Callout Badges
       L.marker([45.275222, -111.431925], {
         icon: L.divIcon({
           className: '',
-          html: '<div class="scenario-map-callout callout-cyan">⛷️ Start: Upper Bowl / Swift Current Top</div>',
-          iconSize: [210, 26],
-          iconAnchor: [105, 30]
+          html: '<div class="scenario-map-callout callout-sky">ORIGIN: Swift Current Top</div>',
+          iconSize: [190, 24],
+          iconAnchor: [95, 28]
         })
       }).addTo(layerGroups.scenarioSnack);
 
       L.marker([45.263, -111.439], {
         icon: L.divIcon({
           className: '',
-          html: '<div class="scenario-map-callout callout-cyan">🍔 TARGET: Shedhorn Grill (Open 11:00–15:30 • Grab & Go)</div>',
-          iconSize: [280, 26],
-          iconAnchor: [140, -18]
+          html: '<div class="scenario-map-callout callout-sky">TARGET: Shedhorn Grill (11:00–15:30 • Grab &amp; Go)</div>',
+          iconSize: [275, 24],
+          iconAnchor: [138, -16]
         })
       }).addTo(layerGroups.scenarioSnack);
 
@@ -1322,25 +1260,23 @@
         serviceMarkersById['srv_shedhorn_grill'].marker.openPopup();
       }
 
-      // Fit bounds smoothly to include the snack route
       map.flyToBounds(L.latLngBounds(INTERMEDIATE_SNACK_ROUTE_COORDS).pad(0.28), {
         duration: 0.9
       });
 
-      // Update Telemetry Readout
       document.getElementById('telemetry-title').textContent = 'AMENITY ROUTER • INTERMEDIATE SNACK (13:15)';
       document.getElementById('telemetry-latency').textContent = '0.1035 ms (1-to-N Heap)';
       document.getElementById('telemetry-body').innerHTML =
-        `Selected <strong>Shedhorn Grill</strong> (<code>srv_shedhorn_grill</code> @ <code>node_jct_0011</code>). Hard skill ceiling <code>maxDifficulty = .intermediate</code> enforced (0 Black/Expert runs).`;
+        `Selected <strong>Shedhorn Grill</strong> (<code>srv_shedhorn_grill</code> @ <code>node_jct_0011</code>). Hard ceiling <code>maxDifficulty = .intermediate</code> enforced (0 Black/Expert runs).`;
       document.getElementById('telemetry-steps').innerHTML = `
-        <li class="route-step-item step-cyan">
-          <strong>1. SQLite Pre-Filter (0.030ms):</strong> <code>category='quick_snack' AND service_speed='grab_and_go' AND '13:15' BETWEEN open AND close AND requires_reservation=0</code>
+        <li class="route-step-item step-sky">
+          <strong>1. SQLite Filter (0.030ms):</strong> <code>category='quick_snack' AND service_speed='grab_and_go'</code> open at <code>13:15</code> with <code>requires_reservation=0</code>.
         </li>
-        <li class="route-step-item step-cyan">
-          <strong>2. Excluded Candidates:</strong> <em>Everett's 8800</em> (requires reservation) &amp; <em>Black Diamond Chutes</em> (exceeds Intermediate ceiling).
+        <li class="route-step-item step-sky">
+          <strong>2. Excluded Venues:</strong> <em>Everett's 8800</em> (<code>sit_down</code> table service requiring reservation) and black-diamond shortcuts above <code>.intermediate</code>.
         </li>
-        <li class="route-step-item step-cyan">
-          <strong>3. Optimal Cyan Route (112.0s weighted):</strong> Traverse <em>Duck Walk → Upper Sunlight → Shedhorn Trail</em> (100% Intermediate Blue, 0.8x groomed bonus) to <strong>Shedhorn Grill</strong>.
+        <li class="route-step-item step-sky">
+          <strong>3. Selected Route (112.0s weighted):</strong> Traverse <em>Duck Walk → Upper Sunlight → Shedhorn Trail</em> (100% Intermediate Blue, 0.8x groomed bonus) to <strong>Shedhorn Grill</strong>.
         </li>
       `;
     }
@@ -1360,20 +1296,19 @@
       }
 
       card.classList.add('active-windhold');
-      statusBadge.textContent = '⚠️ WIND HOLD ACTIVE';
+      statusBadge.textContent = 'WIND HOLD ACTIVE';
       statusBadge.style.color = '#f87171';
 
-      // 1. Render Blocked Path A (Ramcharger 8) in Bright RED (#e74c3c)
       L.polyline(PATH_A_RAMCHARGER_COORDS, {
-        color: '#e74c3c',
-        weight: 12,
+        color: '#dc2626',
+        weight: 10,
         opacity: 0.25,
         lineCap: 'round'
       }).addTo(layerGroups.scenarioWindHold);
 
       L.polyline(PATH_A_RAMCHARGER_COORDS, {
-        color: '#e74c3c',
-        weight: 5.5,
+        color: '#ef4444',
+        weight: 5,
         opacity: 0.98,
         dashArray: '10, 8',
         lineCap: 'round'
@@ -1382,24 +1317,23 @@
       L.marker([45.278251, -111.398697], {
         icon: L.divIcon({
           className: '',
-          html: '<div class="scenario-map-callout callout-red">⛔ PATH A BLOCKED: Ramcharger 8 (.windHold → Cost: nil)</div>',
-          iconSize: [280, 26],
-          iconAnchor: [140, 13]
+          html: '<div class="scenario-map-callout callout-red">BLOCKED: Ramcharger 8 (.windHold → Cost: nil)</div>',
+          iconSize: [265, 24],
+          iconAnchor: [132, 12]
         })
       }).addTo(layerGroups.scenarioWindHold);
 
-      // 2. Dynamically Render Detour Path B via Swift Current 6 in Bright GREEN (#2ecc71)
       L.polyline(PATH_B_SWIFT_CURRENT_DETOUR_COORDS, {
-        color: '#2ecc71',
-        weight: 13,
+        color: '#16a34a',
+        weight: 10,
         opacity: 0.28,
         lineCap: 'round',
         lineJoin: 'round'
       }).addTo(layerGroups.scenarioWindHold);
 
       L.polyline(PATH_B_SWIFT_CURRENT_DETOUR_COORDS, {
-        color: '#2ecc71',
-        weight: 5.5,
+        color: '#22c55e',
+        weight: 5,
         opacity: 1.0,
         lineCap: 'round',
         lineJoin: 'round'
@@ -1407,7 +1341,7 @@
 
       L.polyline(PATH_B_SWIFT_CURRENT_DETOUR_COORDS, {
         color: '#ffffff',
-        weight: 2.5,
+        weight: 2,
         opacity: 0.9,
         dashArray: '8, 20',
         className: 'animated-route-line'
@@ -1416,9 +1350,9 @@
       L.marker([45.279933, -111.41433], {
         icon: L.divIcon({
           className: '',
-          html: '<div class="scenario-map-callout callout-green">✅ DETOUR PATH B: Swift Current 6 → Andesite Connector (540s)</div>',
-          iconSize: [300, 26],
-          iconAnchor: [150, -14]
+          html: '<div class="scenario-map-callout callout-green">DETOUR: Swift Current 6 → Silver Knife (540s)</div>',
+          iconSize: [275, 24],
+          iconAnchor: [138, -14]
         })
       }).addTo(layerGroups.scenarioWindHold);
 
@@ -1427,20 +1361,19 @@
       );
       map.flyToBounds(combinedBounds.pad(0.22), { duration: 0.85 });
 
-      // Update Telemetry Readout
       document.getElementById('telemetry-title').textContent = 'DYNAMIC OVERLAY • RAMCHARGER 8 WIND HOLD';
       document.getElementById('telemetry-latency').textContent = '0.0920 ms (<5.0ms budget)';
       document.getElementById('telemetry-body').innerHTML =
-        `In-memory <code>DynamicOverlayManager</code> masked <code>lift_ramcharger = .windHold</code>. SQLite bundle remains untouched (<code>PRAGMA query_only = ON</code>, 0 disk writes).`;
+        `In-memory <code>DynamicOverlayManager</code> set <code>lift_ramcharger = .windHold</code>. SQLite bundle remains untouched (<code>PRAGMA query_only = ON</code>, 0 disk writes).`;
       document.getElementById('telemetry-steps').innerHTML = `
         <li class="route-step-item step-red">
-          <strong>⛔ Path A Pruned (Ramcharger 8):</strong> <code>status = .windHold</code> → <code>calculateCost()</code> returns <code>nil</code> (was 240.0s direct).
+          <strong>Path A Pruned (Ramcharger 8):</strong> <code>status = .windHold</code> → <code>calculateCost()</code> returns <code>nil</code> (was 240.0s direct).
         </li>
         <li class="route-step-item step-green">
-          <strong>✅ Step 1 (Detour Lift):</strong> Board <strong>Swift Current 6</strong> from Mountain Village Base to Swift Current Summit (420.0s).
+          <strong>Step 1 (Detour Lift):</strong> Board <strong>Swift Current 6</strong> from Mountain Village Base to Swift Current Summit (420.0s).
         </li>
         <li class="route-step-item step-green">
-          <strong>✅ Step 2 (Groomed Connector):</strong> Ski <strong>Silver Knife / Andesite Connector</strong> (intermediate blue, 150s × 0.8 = 120.0s) to <strong>Everett's 8800 (Andesite Summit)</strong>.
+          <strong>Step 2 (Groomed Connector):</strong> Ski <strong>Silver Knife</strong> (intermediate blue, 150s × 0.8 = 120.0s) to <strong>Andesite Summit / Everett's 8800</strong>.
         </li>
       `;
     }
@@ -1455,14 +1388,14 @@
       layerGroups.scenarioWindHold.clearLayers();
 
       L.polyline(PATH_A_RAMCHARGER_COORDS, {
-        color: '#2ecc71',
-        weight: 11,
+        color: '#16a34a',
+        weight: 10,
         opacity: 0.28,
         lineCap: 'round'
       }).addTo(layerGroups.scenarioWindHold);
 
       L.polyline(PATH_A_RAMCHARGER_COORDS, {
-        color: '#2ecc71',
+        color: '#22c55e',
         weight: 5,
         opacity: 0.98,
         lineCap: 'round'
@@ -1471,9 +1404,9 @@
       L.marker([45.278251, -111.398697], {
         icon: L.divIcon({
           className: '',
-          html: '<div class="scenario-map-callout callout-green">✅ BASELINE PATH A: Direct via Ramcharger 8 (240.0s / 4m 00s)</div>',
-          iconSize: [290, 26],
-          iconAnchor: [145, 13]
+          html: '<div class="scenario-map-callout callout-green">BASELINE PATH A: Direct via Ramcharger 8 (240.0s / 4m 00s)</div>',
+          iconSize: [285, 24],
+          iconAnchor: [142, 12]
         })
       }).addTo(layerGroups.scenarioWindHold);
 
@@ -1482,10 +1415,10 @@
       document.getElementById('telemetry-title').textContent = 'BASELINE ROUTE • 0 ACTIVE OVERLAYS';
       document.getElementById('telemetry-latency').textContent = '0.0307 ms';
       document.getElementById('telemetry-body').innerHTML =
-        `Under normal operating conditions, <code>CirqueGraphSolver</code> selects direct <strong>Path A via Ramcharger 8</strong> from Mountain Village (2,286m) to Andesite Summit (2,682m).`;
+        `With zero active holds, <code>CirqueGraphSolver</code> picks direct <strong>Path A via Ramcharger 8</strong> from Mountain Village (2,286m) to Andesite Summit (2,682m).`;
       document.getElementById('telemetry-steps').innerHTML = `
         <li class="route-step-item step-green">
-          <strong>Step 1 (Direct High-Speed 8-Pack):</strong> Take <strong>Ramcharger 8</strong> directly to Everett's 8800 / Andesite Mountain Summit (Weighted Cost: 240.0s).
+          <strong>Step 1 (Direct High-Speed 8-Pack):</strong> Board <strong>Ramcharger 8</strong> directly to Andesite Mountain Summit (Weighted Cost: 240.0s).
         </li>
       `;
     }
@@ -1496,7 +1429,7 @@
         document.getElementById('telemetry-title').textContent = 'SOLVER TELEMETRY IDLE';
         document.getElementById('telemetry-latency').textContent = '0.09ms';
         document.getElementById('telemetry-body').textContent =
-          'Select a scenario above to inspect real-time Dijkstra pathfinding, temporal SQLite venue filtering, or wind-hold edge masking on Big Sky Resort.';
+          'Select a scenario above to inspect multi-criteria Dijkstra pathfinding, operating-hours SQLite filtering, or RAM wind-hold edge masking on Big Sky Resort.';
         document.getElementById('telemetry-steps').innerHTML = '';
       }
     }
@@ -1504,7 +1437,7 @@
     function resetAllScenarios() {
       snackRouteActive = false;
       document.getElementById('btn-simulate-snack-route').classList.remove('active');
-      document.getElementById('card-snack-route').classList.remove('active-cyan');
+      document.getElementById('card-snack-route').classList.remove('active-route');
 
       const toggle = document.getElementById('toggle-ramcharger-wind-hold');
       toggle.checked = false;
@@ -1523,7 +1456,6 @@
       updateIdleTelemetryIfNeeded();
     }
 
-    // Boot Harness
     loadBigSkyGeoJSON();
     loadMountainServicesFromSQLite();
   </script>

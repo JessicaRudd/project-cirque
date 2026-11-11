@@ -20,12 +20,13 @@ Follow the anti-overengineering and locality rules from `grugbrain.ai` and `Patr
 ## 3. Test Harness Execution
 - **Swift Core (`ios/CirqueCore`):**
   ```bash
+  ./scripts/bootstrap_swift_linux.sh
   PATH="/tmp/swift/usr/bin:$PATH" swift test --package-path ios/CirqueCore --filter <TestClass>
   ```
-  *Note:* On Linux XCTest, if using `XCTAssertEqual` with optional `FloatingPoint` accuracy, include the `#if !canImport(ObjectiveC)` overload.
+  *Note:* Shared XCTest helpers (`assertOptionalDoubleEqual`, temporary SQLite test fixtures) live in `ios/CirqueCore/Tests/CirqueCoreTests/TestSupport.swift`.
 - **Python Pipelines / SLM:**
   ```bash
-  pytest tests/<dir>/test_<module>.py -v
+  uv run --with-requirements requirements.txt pytest tests/<dir>/test_<module>.py -v
   ```
 
 ## 4. Human-Voice Devlog & Content Generation

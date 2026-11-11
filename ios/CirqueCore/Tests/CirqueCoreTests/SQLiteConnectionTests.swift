@@ -4,69 +4,6 @@ import Foundation
 
 final class SQLiteConnectionTests: XCTestCase {
 
-    // MARK: - Section 2.3 Relational Graph DDL Fixture
-
-    private static let relationalGraphDDL = """
-    PRAGMA foreign_keys = ON;
-    PRAGMA journal_mode = WAL;
-
-    CREATE TABLE nodes (
-        node_id TEXT PRIMARY KEY,
-        name TEXT,
-        lat REAL NOT NULL,
-        lon REAL NOT NULL,
-        elevation_m REAL NOT NULL,
-        node_type TEXT CHECK(node_type IN ('trail_junction', 'lift_base', 'lift_top', 'poi', 'summit', 'village')),
-        poi_category TEXT CHECK(poi_category IN ('restaurant_sitdown', 'cafeteria', 'warming_hut', 'patrol', 'restroom', NULL))
-    );
-
-    CREATE TABLE edges (
-        edge_id TEXT PRIMARY KEY,
-        source_node TEXT NOT NULL REFERENCES nodes(node_id),
-        target_node TEXT NOT NULL REFERENCES nodes(node_id),
-        type TEXT NOT NULL CHECK(type IN ('piste', 'lift')),
-        name TEXT NOT NULL,
-        difficulty TEXT CHECK(difficulty IN ('novice', 'intermediate', 'advanced', 'expert', 'freeride', 'lift')),
-        grooming TEXT CHECK(grooming IN ('groomed', 'backcountry', 'mogul', NULL)),
-        length_m REAL NOT NULL,
-        vertical_diff_m REAL NOT NULL,
-        average_pitch_pct REAL NOT NULL,
-        base_cost_seconds REAL NOT NULL,
-        FOREIGN KEY(source_node) REFERENCES nodes(node_id),
-        FOREIGN KEY(target_node) REFERENCES nodes(node_id)
-    );
-
-    CREATE INDEX idx_edges_source ON edges(source_node);
-    CREATE INDEX idx_edges_target ON edges(target_node);
-    CREATE INDEX idx_edges_type_diff ON edges(type, difficulty);
-    CREATE INDEX idx_nodes_coords ON nodes(lat, lon);
-    CREATE INDEX idx_nodes_poi ON nodes(poi_category);
-
-    CREATE TABLE dynamic_status_overlay (
-        edge_id TEXT PRIMARY KEY REFERENCES edges(edge_id),
-        status TEXT NOT NULL CHECK(status IN ('open', 'closed_patrol', 'wind_hold', 'mechanical_hold')),
-        effective_grooming TEXT CHECK(effective_grooming IN ('groomed', 'ungroomed', 'powder', 'moguls')),
-        last_updated_epoch INTEGER NOT NULL
-    );
-
-    CREATE TABLE mountain_services (
-        service_id TEXT PRIMARY KEY,
-        node_id TEXT NOT NULL REFERENCES nodes(node_id),
-        name TEXT NOT NULL,
-        category TEXT NOT NULL CHECK(category IN ('quick_snack', 'cafeteria', 'sit_down', 'bar', 'warming_hut', 'patrol', 'restroom')),
-        service_speed TEXT CHECK(service_speed IN ('grab_and_go', 'counter_service', 'table_service', NULL)),
-        open_time_local TEXT NOT NULL,
-        close_time_local TEXT NOT NULL,
-        requires_reservation INTEGER NOT NULL DEFAULT 0,
-        price_tier TEXT CHECK(price_tier IN ('$', '$$', '$$$', '$$$$', NULL)),
-        is_ski_in_only INTEGER NOT NULL DEFAULT 1,
-        daily_status TEXT NOT NULL DEFAULT 'open' CHECK(daily_status IN ('open', 'closed_weather', 'closed_seasonal'))
-    );
-
-    CREATE INDEX idx_services_lookup ON mountain_services(category, service_speed, daily_status);
-    CREATE INDEX idx_services_node ON mountain_services(node_id);
-    """
-
     private var tempDatabaseURL: URL!
 
     override func setUpWithError() throws {
@@ -84,20 +21,17 @@ final class SQLiteConnectionTests: XCTestCase {
         try super.tearDownWithError()
     }
 
-    // MARK: - Helper to Build File-Backed WAL Fixture
-
     private func createSeededDatabaseFile(seedSQL: String) throws -> String {
         let path = tempDatabaseURL.path
         let writer = try CirqueDatabase(path: path, mode: .readWriteCreate)
-        try writer.executeRaw(Self.relationalGraphDDL)
+        try writer.executeRaw("PRAGMA journal_mode = WAL;")
+        try writer.executeRaw(TestGraphSchema.relationalGraphDDL)
         if !seedSQL.isEmpty {
             try writer.executeRaw(seedSQL)
         }
         writer.close()
         return path
     }
-
-    // MARK: - 1. Database Initialization & WAL Mode Verification
 
     func testDatabaseInitialization() throws {
         let seedSQL = """
@@ -107,7 +41,6 @@ final class SQLiteConnectionTests: XCTestCase {
         """
         let path = try createSeededDatabaseFile(seedSQL: seedSQL)
 
-        // Open in production read-only mode (SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX)
         let db = try CirqueDatabase(path: path, mode: .readOnly)
         defer { db.close() }
 
@@ -115,7 +48,6 @@ final class SQLiteConnectionTests: XCTestCase {
         XCTAssertEqual(db.currentJournalMode(), "wal", "Database must operate in WAL journal mode.")
         XCTAssertTrue(db.isQueryOnlyEnabled(), "Read-only connection must enforce PRAGMA query_only = ON.")
 
-        // Verify node lookup
         let baseNode = db.getNode(byId: "node_village_base")
         XCTAssertNotNil(baseNode)
         XCTAssertEqual(baseNode?.name, "Mountain Village Base")
@@ -123,20 +55,17 @@ final class SQLiteConnectionTests: XCTestCase {
         XCTAssertEqual(baseNode?.nodeType, "village")
         XCTAssertEqual(baseNode?.poiCategory, "cafeteria")
 
-        // Verify write attempts fail under read-only mode
         XCTAssertThrowsError(
             try db.executeRaw("DELETE FROM nodes;"),
             "Write operations must be rejected when opened with SQLITE_OPEN_READONLY and PRAGMA query_only = ON."
         )
     }
 
-    // MARK: - 2. Outgoing Edges Query Performance (< 2.0 ms for 500 Edges)
-
     func testOutgoingEdgesQueryPerformance() throws {
         let db = try CirqueDatabase(path: ":memory:", mode: .readWriteCreate)
         defer { db.close() }
 
-        try db.executeRaw(Self.relationalGraphDDL)
+        try db.executeRaw(TestGraphSchema.relationalGraphDDL)
 
         // Insert hub node and 500 target nodes + 500 directed edges
         var sqlBuilder = "BEGIN TRANSACTION;\n"

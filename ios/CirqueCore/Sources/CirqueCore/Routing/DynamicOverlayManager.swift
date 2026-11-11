@@ -412,29 +412,27 @@ public final class DynamicOverlayManager: @unchecked Sendable {
         let groomingMap = extractGroomingMap(from: dict, aliases: aliases)
 
         if let liftsContainer = dict["lifts"] as? [String: Any] {
+            matchedLiftieStructure = true
             let statusMap = (liftsContainer["status"] as? [String: Any]) ?? liftsContainer
-            if dict["lifts"] != nil, liftsContainer["status"] is [String: Any] {
-                matchedLiftieStructure = true
-                for (rawKey, rawStatusVal) in statusMap {
-                    guard let statusStr = rawStatusVal as? String else {
-                        throw DynamicOverlayError.invalidEdgeStatus(edgeId: rawKey, rawValue: "\(rawStatusVal)")
-                    }
-                    let resolvedId = resolveEdgeId(rawKey, defaultPrefix: "lift_", aliases: aliases)
-                    guard !resolvedId.isEmpty else {
-                        throw DynamicOverlayError.emptyEdgeIdentifier
-                    }
-                    guard let status = EdgeStatus(wireValue: statusStr) else {
-                        throw DynamicOverlayError.invalidEdgeStatus(edgeId: resolvedId, rawValue: statusStr)
-                    }
-                    liftieOverlays.append(
-                        DynamicStatusOverlay(
-                            edgeId: resolvedId,
-                            status: status,
-                            effectiveGrooming: groomingMap[resolvedId],
-                            lastUpdatedEpoch: envelopeEpoch
-                        )
-                    )
+            for (rawKey, rawStatusVal) in statusMap {
+                guard let statusStr = rawStatusVal as? String else {
+                    throw DynamicOverlayError.invalidEdgeStatus(edgeId: rawKey, rawValue: "\(rawStatusVal)")
                 }
+                let resolvedId = resolveEdgeId(rawKey, defaultPrefix: "lift_", aliases: aliases)
+                guard !resolvedId.isEmpty else {
+                    throw DynamicOverlayError.emptyEdgeIdentifier
+                }
+                guard let status = EdgeStatus(wireValue: statusStr) else {
+                    throw DynamicOverlayError.invalidEdgeStatus(edgeId: resolvedId, rawValue: statusStr)
+                }
+                liftieOverlays.append(
+                    DynamicStatusOverlay(
+                        edgeId: resolvedId,
+                        status: status,
+                        effectiveGrooming: groomingMap[resolvedId],
+                        lastUpdatedEpoch: envelopeEpoch
+                    )
+                )
             }
         }
 
@@ -480,7 +478,7 @@ public final class DynamicOverlayManager: @unchecked Sendable {
         }
 
         if matchedLiftieStructure {
-            // Merge standalone grooming overrides for open pistes not already listed in trails.status
+            // Merge standalone grooming overrides for open pistes omitted from trails.status
             let existingIds = Set(liftieOverlays.map(\.edgeId))
             for (edgeId, groomingOverride) in groomingMap where !existingIds.contains(edgeId) {
                 liftieOverlays.append(
@@ -495,7 +493,6 @@ public final class DynamicOverlayManager: @unchecked Sendable {
             return liftieOverlays.sorted { $0.edgeId < $1.edgeId }
         }
 
-        // Format 4: Single DynamicStatusOverlay JSON object
         if dict["edge_id"] != nil || dict["edgeId"] != nil {
             return [try parseOverlayDictionary(dict, aliases: aliases, fallbackEpoch: envelopeEpoch)]
         }
@@ -584,26 +581,26 @@ public final class DynamicOverlayManager: @unchecked Sendable {
 
     private static func extractTimestamp(from dict: [String: Any]) -> Int64? {
         for key in ["lastUpdatedEpoch", "last_updated_epoch", "updated_at", "updatedAt", "timestamp"] {
-            if let int64Val = dict[key] as? Int64 {
-                return DynamicStatusOverlay.normalizeEpochSeconds(int64Val)
+            if let direct = coerceEpoch(dict[key]) {
+                return direct
             }
-            if let intVal = dict[key] as? Int {
-                return DynamicStatusOverlay.normalizeEpochSeconds(Int64(intVal))
+            if let nestedTs = dict[key] as? [String: Any],
+               let liftsTs = coerceEpoch(nestedTs["lifts"]) {
+                return liftsTs
             }
-            if let doubleVal = dict[key] as? Double {
-                return DynamicStatusOverlay.normalizeEpochSeconds(Int64(doubleVal))
-            }
-            if let nestedTs = dict[key] as? [String: Any] {
-                if let liftsTs = nestedTs["lifts"] as? Int64 {
-                    return DynamicStatusOverlay.normalizeEpochSeconds(liftsTs)
-                }
-                if let liftsTsInt = nestedTs["lifts"] as? Int {
-                    return DynamicStatusOverlay.normalizeEpochSeconds(Int64(liftsTsInt))
-                }
-                if let liftsTsDouble = nestedTs["lifts"] as? Double {
-                    return DynamicStatusOverlay.normalizeEpochSeconds(Int64(liftsTsDouble))
-                }
-            }
+        }
+        return nil
+    }
+
+    private static func coerceEpoch(_ raw: Any?) -> Int64? {
+        if let int64Val = raw as? Int64 {
+            return DynamicStatusOverlay.normalizeEpochSeconds(int64Val)
+        }
+        if let intVal = raw as? Int {
+            return DynamicStatusOverlay.normalizeEpochSeconds(Int64(intVal))
+        }
+        if let doubleVal = raw as? Double {
+            return DynamicStatusOverlay.normalizeEpochSeconds(Int64(doubleVal))
         }
         return nil
     }

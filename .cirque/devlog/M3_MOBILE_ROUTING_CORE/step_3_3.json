@@ -126,11 +126,11 @@
     "pass_criteria": "testWindHoldDetour() cleanly redirects route around Ramcharger 8 within 5ms of overlay application without mutating SQLite."
   },
   "content_harvesting": {
-    "sublines": "Dynamic Graph Edge Masking in Memory: Sub-100-Microsecond Alpine Weather Rerouting",
+    "sublines": "In-Memory Edge Masking for Sub-Millisecond Chairlift Wind-Hold Reroutes",
     "talking_points": [
-      "Decoupling immutable seasonal cartography (`topology.sqlite` opened with `PRAGMA query_only = ON` and 1-year CDN caching) from volatile 5-minute weather holds using an `NSLock`-guarded in-memory `[String: DynamicStatusOverlay]` overlay table.",
-      "Supporting both hard topological pruning (`.windHold`, `.closedPatrol`, `.mechanicalHold` -> `nil` edge cost) and soft surface overrides (`effectiveGrooming: .moguls` applying a 5.0x penalty atop base groomed cruisers) inside `CirqueGraphSolver.calculateCost`.",
-      "Re-evaluating multi-criteria Dijkstra detours from Mountain Village around a wind-held Ramcharger 8 via Swift Current 6 in 0.092 milliseconds (54x faster than the 5.0ms target budget)."
+      "topology.sqlite stays read-only (PRAGMA query_only = ON) while 5-minute lift and patrol deltas live in an NSLock-guarded [String: DynamicStatusOverlay] table in RAM.",
+      "CirqueGraphSolver.calculateCost returns nil on .windHold, .closedPatrol, and .mechanicalHold edges and applies effectiveGrooming multipliers over base trail attributes.",
+      "When Ramcharger 8 goes on wind hold, Dijkstra reroutes from Mountain Village to Everett's 8800 via Swift Current 6 in 0.092 ms."
     ]
   }
 }

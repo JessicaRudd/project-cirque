@@ -365,7 +365,6 @@ public final class CirqueGraphSolver {
             return nil
         }
 
-        // Trivial case: already standing at a qualifying target node.
         if candidateTargets.contains(query.startNodeId) {
             return ResolvedTargetRoute(
                 destinationNodeId: query.startNodeId,
@@ -385,13 +384,13 @@ public final class CirqueGraphSolver {
         var resolvedTotalCost: Double = 0.0
 
         while let current = frontier.extractMin() {
-            // Skip stale heap entries superseded by a shorter path.
+            // Lazy deletion: skip heap entries superseded by a lower-cost relaxation.
             if settledNodes.contains(current.nodeId) {
                 continue
             }
             settledNodes.insert(current.nodeId)
 
-            // First target popped from the min-heap is guaranteed globally optimal across all N candidates.
+            // Min-heap monotonicity guarantees the first popped candidate is globally optimal across all N targets.
             if candidateTargets.contains(current.nodeId) {
                 resolvedDestinationNodeId = current.nodeId
                 resolvedTotalCost = current.cumulativeCost
@@ -406,7 +405,6 @@ public final class CirqueGraphSolver {
                 }
 
                 guard let edgeCost = calculateCost(edge: edge, query: query) else {
-                    // Hard cutoff triggered: edge closed/on-hold or exceeds skier's maxDifficulty ceiling.
                     continue
                 }
 
@@ -445,18 +443,14 @@ public final class CirqueGraphSolver {
         )
     }
 
-    // MARK: - Target Resolution (Direct Node ID + Time-Gated POI Services)
-
     private func resolveTargetNodeIds(for query: RouteQuery) -> Set<String> {
         var targets = Set<String>()
 
-        // 1. Direct target node ID if specified
         if let explicitTarget = query.targetNodeId, !explicitTarget.isEmpty {
             targets.insert(explicitTarget)
             return targets
         }
 
-        // 2. Query mountain_services table using category, service speed, and local time window
         let timeFilter = query.requireOpenNow ? query.currentTimeLocal : nil
         let matchingServices = database.getServices(
             category: query.targetPoiCategory,
@@ -471,7 +465,6 @@ public final class CirqueGraphSolver {
                 targets.insert(service.nodeId)
             }
 
-            // Fallback: also match node names directly if no service matched by name
             if targets.isEmpty {
                 for node in database.getAllNodes() {
                     if let nodeName = node.name?.lowercased(), nodeName.contains(normalizedQueryName) {
@@ -484,7 +477,6 @@ public final class CirqueGraphSolver {
                 targets.insert(service.nodeId)
             }
 
-            // Fallback: if querying by POI category directly on nodes when mountain_services is empty
             if targets.isEmpty, let category = query.targetPoiCategory {
                 for node in database.getAllNodes() where node.poiCategory == category {
                     targets.insert(node.nodeId)

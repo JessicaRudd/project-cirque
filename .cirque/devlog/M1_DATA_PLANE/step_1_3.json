@@ -2,7 +2,7 @@
   "step_id": "STEP_1_3",
   "milestone_id": "M1_DATA_PLANE",
   "title": "On-Mountain Amenities & Services Ingestion",
-  "timestamp": "2026-11-09T01:46:39Z",
+  "timestamp": "2026-11-11T20:44:08Z",
   "status": "PASSED",
   "metrics": {
     "total_services": 15,
@@ -150,26 +150,22 @@
   ],
   "artifacts_created": [
     "pipeline/ingest_mountain_services.py",
-    "tests/pipeline/test_services.py",
-    ".cirque/devlog/M1_DATA_PLANE/step_1_3.json"
+    "tests/pipeline/test_services.py"
   ],
   "harness_execution": {
     "name": "Amenity Junction Snapping & Operating Hours Harness",
-    "command": "pytest tests/pipeline/test_services.py -v",
+    "command": "uv run --with-requirements requirements.txt pytest tests/pipeline/test_services.py -v",
     "pass_criteria": "All dining and patrol points of interest snap to existing graph vertices within a 25-meter radius.",
     "tests_total": 4,
     "tests_passed": 4,
     "status": "PASSED"
   },
   "content_harvesting": {
-    "sublines": "Data modeling for spatial alpine services on a 2,900-node graph",
-    "artifacts_to_save": [
-      ".cirque/devlog/M1_DATA_PLANE/step_1_3.json"
-    ],
+    "sublines": "Spatial Snapping for 15 Big Sky On-Mountain Services",
     "talking_points": [
-      "Snapping real-world POIs to nearest navigable network vertices without distorting Dijkstra weights",
-      "Structuring time-gated amenities for lunch, warming huts, and ski patrol emergency routing",
-      "Bridging the 15m-50m gap with bidirectional virtual pedestrian walk edges"
+      "15 dining, patrol, warming hut, and restroom venues snap to navigable junctions (avg 2.66m, max 20.12m).",
+      "POIs within 15m bind directly to existing junctions so Dijkstra edge counts stay flat.",
+      "POIs 15m-50m off-piste receive dedicated POI vertices with 45s bidirectional pedestrian walk edges (2 injected)."
     ]
   }
 }

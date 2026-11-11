@@ -4,73 +4,11 @@ import Foundation
 
 final class AmenityRoutingTests: XCTestCase {
 
-    // MARK: - Section 2.3 Relational Graph DDL Fixture
-
-    private static let relationalGraphDDL = """
-    PRAGMA foreign_keys = ON;
-
-    CREATE TABLE nodes (
-        node_id TEXT PRIMARY KEY,
-        name TEXT,
-        lat REAL NOT NULL,
-        lon REAL NOT NULL,
-        elevation_m REAL NOT NULL,
-        node_type TEXT CHECK(node_type IN ('trail_junction', 'lift_base', 'lift_top', 'poi', 'summit', 'village')),
-        poi_category TEXT CHECK(poi_category IN ('restaurant_sitdown', 'cafeteria', 'warming_hut', 'patrol', 'restroom', NULL))
-    );
-
-    CREATE TABLE edges (
-        edge_id TEXT PRIMARY KEY,
-        source_node TEXT NOT NULL REFERENCES nodes(node_id),
-        target_node TEXT NOT NULL REFERENCES nodes(node_id),
-        type TEXT NOT NULL CHECK(type IN ('piste', 'lift')),
-        name TEXT NOT NULL,
-        difficulty TEXT CHECK(difficulty IN ('novice', 'intermediate', 'advanced', 'expert', 'freeride', 'lift')),
-        grooming TEXT CHECK(grooming IN ('groomed', 'backcountry', 'mogul', NULL)),
-        length_m REAL NOT NULL,
-        vertical_diff_m REAL NOT NULL,
-        average_pitch_pct REAL NOT NULL,
-        base_cost_seconds REAL NOT NULL,
-        FOREIGN KEY(source_node) REFERENCES nodes(node_id),
-        FOREIGN KEY(target_node) REFERENCES nodes(node_id)
-    );
-
-    CREATE INDEX idx_edges_source ON edges(source_node);
-    CREATE INDEX idx_edges_target ON edges(target_node);
-    CREATE INDEX idx_edges_type_diff ON edges(type, difficulty);
-    CREATE INDEX idx_nodes_coords ON nodes(lat, lon);
-    CREATE INDEX idx_nodes_poi ON nodes(poi_category);
-
-    CREATE TABLE mountain_services (
-        service_id TEXT PRIMARY KEY,
-        node_id TEXT NOT NULL REFERENCES nodes(node_id),
-        name TEXT NOT NULL,
-        category TEXT NOT NULL CHECK(category IN ('quick_snack', 'cafeteria', 'sit_down', 'bar', 'warming_hut', 'patrol', 'restroom')),
-        service_speed TEXT CHECK(service_speed IN ('grab_and_go', 'counter_service', 'table_service', NULL)),
-        open_time_local TEXT NOT NULL,
-        close_time_local TEXT NOT NULL,
-        requires_reservation INTEGER NOT NULL DEFAULT 0,
-        price_tier TEXT CHECK(price_tier IN ('$', '$$', '$$$', '$$$$', NULL)),
-        is_ski_in_only INTEGER NOT NULL DEFAULT 1,
-        daily_status TEXT NOT NULL DEFAULT 'open' CHECK(daily_status IN ('open', 'closed_weather', 'closed_seasonal'))
-    );
-
-    CREATE INDEX idx_services_lookup ON mountain_services(category, service_speed, daily_status);
-    CREATE INDEX idx_services_node ON mountain_services(node_id);
-    """
-
-    // MARK: - Big Sky Amenity & Terrain Fixture (Andesite Summit @ 13:15)
-
     /// Models an intermediate skier starting at `andesite_summit` (2,682m):
-    /// - **Venue A (`Shedhorn Grill`)**: `quick_snack`, `grab_and_go`, open `11:00`–`15:30`, no reservation.
-    ///   Reachable via Intermediate groomed cruiser `Africa` (`trail_africa`, 140s).
-    /// - **Venue B (`Everett's 8800`)**: `sit_down`, `table_service`, open `11:00`–`15:00`, `requires_reservation = 1`
-    ///   (plus reservation-only `Summit Chalet Snack Bar` right at `everetts_lodge`, only 25s away).
-    /// - **Venue C (`Black Diamond Base Cafe`)**: `quick_snack`, `grab_and_go`, open `08:00`–`17:00`, no reservation,
-    ///   reachable ONLY via Advanced Black Diamond piste `Ambush` (`trail_ambush`, 85s — shorter raw time than `Africa`,
-    ///   but strictly off-limits for an `.intermediate` skier).
-    /// - **Open Mountain Village Base Venue (`Vista Hall Base Cafe`)**: `quick_snack`, `grab_and_go`, open `08:00`–`17:00`,
-    ///   no reservation, reachable via Novice green cruiser `Mr. K` (`trail_mr_k`, 280s) for late-afternoon fallback after 15:30.
+    /// - **Venue A (`Shedhorn Grill`)**: `quick_snack`, `grab_and_go`, open `11:00`–`15:30`, no reservation (`trail_africa`, 140s).
+    /// - **Venue B (`Everett's 8800`)**: `sit_down`, `table_service`, open `11:00`–`15:00`, `requires_reservation = 1`.
+    /// - **Venue C (`Black Canyon Espresso Cafe`)**: `quick_snack`, `grab_and_go`, reachable ONLY via Advanced black run `Ambush` (85s).
+    /// - **Fallback Base Venue (`Vista Hall Grab & Go`)**: `quick_snack`, `grab_and_go`, open `08:00`–`17:00` via Novice `Mr. K` (280s).
     private static let bigSkyAmenitySeedSQL = """
     INSERT INTO nodes (node_id, name, lat, lon, elevation_m, node_type, poi_category) VALUES
         ('andesite_summit', 'Andesite Mountain Summit', 45.2730, -111.4120, 2682.0, 'summit', NULL),
@@ -83,16 +21,9 @@ final class AmenityRoutingTests: XCTestCase {
         edge_id, source_node, target_node, type, name,
         difficulty, grooming, length_m, vertical_diff_m, average_pitch_pct, base_cost_seconds
     ) VALUES
-        -- Short novice glide to Everett's 8800 Lodge (25s — closest physical lodge to andesite_summit)
         ('trail_everetts_glide', 'andesite_summit', 'everetts_lodge', 'piste', 'Everett''s Access Glide', 'novice', 'groomed', 90.0, -6.0, 6.7, 25.0),
-
-        -- Intermediate blue cruiser Africa to Shedhorn Grill (140s)
         ('trail_africa', 'andesite_summit', 'shedhorn_hub', 'piste', 'Africa', 'intermediate', 'groomed', 1850.0, -162.0, 18.5, 140.0),
-
-        -- Steep Advanced black diamond Ambush to Venue C Black Diamond Base Cafe (85s raw cost, unsafe for intermediate)
         ('trail_ambush', 'andesite_summit', 'black_canyon_base', 'piste', 'Ambush', 'advanced', 'mogul', 1180.0, -292.0, 34.0, 85.0),
-
-        -- Long Novice green cruiser Mr. K all the way to Mountain Village Base (280s)
         ('trail_mr_k', 'andesite_summit', 'village_mountain_village', 'piste', 'Mr. K', 'novice', 'groomed', 2650.0, -396.0, 14.9, 280.0);
 
     INSERT INTO mountain_services (
@@ -100,19 +31,10 @@ final class AmenityRoutingTests: XCTestCase {
         open_time_local, close_time_local, requires_reservation,
         price_tier, is_ski_in_only, daily_status
     ) VALUES
-        -- Venue A: Shedhorn Grill (open 11:00-15:30, grab_and_go, no reservation)
         ('srv_shedhorn_grill', 'shedhorn_hub', 'Shedhorn Grill', 'quick_snack', 'grab_and_go', '11:00', '15:30', 0, '$$', 1, 'open'),
-
-        -- Venue B: Everett's 8800 (sit_down, table_service, requires reservation = 1)
         ('srv_everetts_8800', 'everetts_lodge', 'Everett''s 8800', 'sit_down', 'table_service', '11:00', '15:00', 1, '$$$', 1, 'open'),
-
-        -- Reservation-required summit snack lounge at Everett's Lodge (tests explicit reservation exclusion even within quick_snack)
         ('srv_everetts_tasting_bar', 'everetts_lodge', 'Everett''s Summit Tasting Counter', 'quick_snack', 'grab_and_go', '11:00', '15:00', 1, '$$$', 1, 'open'),
-
-        -- Venue C: Base cafe reachable ONLY via Advanced black run Ambush
         ('srv_black_canyon_cafe', 'black_canyon_base', 'Black Canyon Espresso Cafe', 'quick_snack', 'grab_and_go', '08:00', '17:00', 0, '$$', 1, 'open'),
-
-        -- Open Mountain Village base venue (open 08:00-17:00, reachable via Novice Mr. K)
         ('srv_vista_hall_grab_go', 'village_mountain_village', 'Vista Hall Grab & Go', 'quick_snack', 'grab_and_go', '08:00', '17:00', 0, '$$', 0, 'open');
     """
 
@@ -123,7 +45,7 @@ final class AmenityRoutingTests: XCTestCase {
     override func setUpWithError() throws {
         try super.setUpWithError()
         db = try CirqueDatabase(path: ":memory:", mode: .readWriteCreate)
-        try db.executeRaw(Self.relationalGraphDDL)
+        try db.executeRaw(TestGraphSchema.relationalGraphDDL)
         try db.executeRaw(Self.bigSkyAmenitySeedSQL)
         try db.enableQueryOnlyMode()
 
@@ -286,7 +208,7 @@ final class AmenityRoutingTests: XCTestCase {
             avoidMoguls: false
         )
 
-        // Patrol closes trail_africa -> Shedhorn Grill becomes unreachable, solver seamlessly picks Vista Hall via Mr. K
+        // Patrol closes trail_africa -> Shedhorn Grill becomes unreachable; solver reroutes to Vista Hall via Mr. K
         overlayManager.setStatus(edgeId: "trail_africa", status: .closedPatrol, grooming: nil)
 
         let rerouted = try XCTUnwrap(router.findOptimalAmenityRoute(for: query))

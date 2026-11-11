@@ -4,76 +4,10 @@ import Foundation
 
 final class DynamicOverlayTests: XCTestCase {
 
-    // MARK: - Section 2.3 Relational Graph DDL Fixture
-
-    private static let relationalGraphDDL = """
-    PRAGMA foreign_keys = ON;
-
-    CREATE TABLE nodes (
-        node_id TEXT PRIMARY KEY,
-        name TEXT,
-        lat REAL NOT NULL,
-        lon REAL NOT NULL,
-        elevation_m REAL NOT NULL,
-        node_type TEXT CHECK(node_type IN ('trail_junction', 'lift_base', 'lift_top', 'poi', 'summit', 'village')),
-        poi_category TEXT CHECK(poi_category IN ('restaurant_sitdown', 'cafeteria', 'warming_hut', 'patrol', 'restroom', NULL))
-    );
-
-    CREATE TABLE edges (
-        edge_id TEXT PRIMARY KEY,
-        source_node TEXT NOT NULL REFERENCES nodes(node_id),
-        target_node TEXT NOT NULL REFERENCES nodes(node_id),
-        type TEXT NOT NULL CHECK(type IN ('piste', 'lift')),
-        name TEXT NOT NULL,
-        difficulty TEXT CHECK(difficulty IN ('novice', 'intermediate', 'advanced', 'expert', 'freeride', 'lift')),
-        grooming TEXT CHECK(grooming IN ('groomed', 'backcountry', 'mogul', NULL)),
-        length_m REAL NOT NULL,
-        vertical_diff_m REAL NOT NULL,
-        average_pitch_pct REAL NOT NULL,
-        base_cost_seconds REAL NOT NULL,
-        FOREIGN KEY(source_node) REFERENCES nodes(node_id),
-        FOREIGN KEY(target_node) REFERENCES nodes(node_id)
-    );
-
-    CREATE INDEX idx_edges_source ON edges(source_node);
-    CREATE INDEX idx_edges_target ON edges(target_node);
-    CREATE INDEX idx_edges_type_diff ON edges(type, difficulty);
-    CREATE INDEX idx_nodes_coords ON nodes(lat, lon);
-    CREATE INDEX idx_nodes_poi ON nodes(poi_category);
-
-    CREATE TABLE dynamic_status_overlay (
-        edge_id TEXT PRIMARY KEY REFERENCES edges(edge_id),
-        status TEXT NOT NULL CHECK(status IN ('open', 'closed_patrol', 'wind_hold', 'mechanical_hold')),
-        effective_grooming TEXT CHECK(effective_grooming IN ('groomed', 'ungroomed', 'powder', 'moguls')),
-        last_updated_epoch INTEGER NOT NULL
-    );
-
-    CREATE TABLE mountain_services (
-        service_id TEXT PRIMARY KEY,
-        node_id TEXT NOT NULL REFERENCES nodes(node_id),
-        name TEXT NOT NULL,
-        category TEXT NOT NULL CHECK(category IN ('quick_snack', 'cafeteria', 'sit_down', 'bar', 'warming_hut', 'patrol', 'restroom')),
-        service_speed TEXT CHECK(service_speed IN ('grab_and_go', 'counter_service', 'table_service', NULL)),
-        open_time_local TEXT NOT NULL,
-        close_time_local TEXT NOT NULL,
-        requires_reservation INTEGER NOT NULL DEFAULT 0,
-        price_tier TEXT CHECK(price_tier IN ('$', '$$', '$$$', '$$$$', NULL)),
-        is_ski_in_only INTEGER NOT NULL DEFAULT 1,
-        daily_status TEXT NOT NULL DEFAULT 'open' CHECK(daily_status IN ('open', 'closed_weather', 'closed_seasonal'))
-    );
-
-    CREATE INDEX idx_services_lookup ON mountain_services(category, service_speed, daily_status);
-    CREATE INDEX idx_services_node ON mountain_services(node_id);
-    """
-
-    // MARK: - Big Sky Resort Sub-Graph Fixture (Mountain Village -> Andesite Summit)
-
     /// Models Mountain Village (`village_mountain_village`, 2286m) to Everett's 8800 (`everetts_8800`, 2682m):
     /// - Primary Path A: `lift_ramcharger` (Ramcharger 8, direct 4-minute chairlift = 240s).
     /// - Detour Path B: `lift_swift_current` (Swift Current 6 = 420s) to `lone_mountain_bowl` (2810.5m),
     ///   followed by `trail_andesite_connector` (intermediate groomed cruiser = 150s) down to `everetts_8800` (2682m).
-    /// - Downhill return runs from `everetts_8800` to `village_mountain_village` (`trail_silver_knife` and `trail_mr_k`)
-    ///   for testing dynamic grooming overrides and patrol closures.
     private static let bigSkyOverlaySeedSQL = """
     INSERT INTO nodes (node_id, name, lat, lon, elevation_m, node_type, poi_category) VALUES
         ('village_mountain_village', 'Mountain Village', 45.2840, -111.4010, 2286.0, 'village', 'cafeteria'),
@@ -84,14 +18,9 @@ final class DynamicOverlayTests: XCTestCase {
         edge_id, source_node, target_node, type, name,
         difficulty, grooming, length_m, vertical_diff_m, average_pitch_pct, base_cost_seconds
     ) VALUES
-        -- Primary Path A: Fast direct 4-minute chairlift (240s) from Mountain Village to Andesite Summit
         ('lift_ramcharger', 'village_mountain_village', 'everetts_8800', 'lift', 'Ramcharger 8', 'lift', NULL, 1890.0, 396.0, 20.9, 240.0),
-
-        -- Detour Path B: Swift Current 6 (420s) to Lone Mountain Bowl + intermediate connector trail (150s) to Andesite Summit
         ('lift_swift_current', 'village_mountain_village', 'lone_mountain_bowl', 'lift', 'Swift Current 6', 'lift', NULL, 2350.0, 524.5, 22.3, 420.0),
         ('trail_andesite_connector', 'lone_mountain_bowl', 'everetts_8800', 'piste', 'Pacifier / Andesite Connector', 'intermediate', 'groomed', 1420.0, -128.5, 9.0, 150.0),
-
-        -- Downhill return pistes from Andesite Summit back to Mountain Village
         ('trail_silver_knife', 'everetts_8800', 'village_mountain_village', 'piste', 'Silver Knife', 'intermediate', 'groomed', 2100.0, -396.0, 18.9, 180.0),
         ('trail_mr_k', 'everetts_8800', 'village_mountain_village', 'piste', 'Mr. K', 'novice', 'groomed', 2450.0, -396.0, 16.2, 240.0);
 
@@ -110,9 +39,8 @@ final class DynamicOverlayTests: XCTestCase {
     override func setUpWithError() throws {
         try super.setUpWithError()
         db = try CirqueDatabase(path: ":memory:", mode: .readWriteCreate)
-        try db.executeRaw(Self.relationalGraphDDL)
+        try db.executeRaw(TestGraphSchema.relationalGraphDDL)
         try db.executeRaw(Self.bigSkyOverlaySeedSQL)
-        // Lock down SQLite database to strictly enforce immutable bundle invariant (PRAGMA query_only = ON)
         try db.enableQueryOnlyMode()
 
         overlayManager = DynamicOverlayManager(
@@ -450,30 +378,3 @@ final class DynamicOverlayTests: XCTestCase {
         XCTAssertEqual(manager.activeOverlayCount, 0)
     }
 }
-
-#if !canImport(ObjectiveC)
-/// Bridges Apple XCTest's optional `FloatingPoint` accuracy assertion overload on Linux `swift-corelibs-xctest`.
-func XCTAssertEqual<T: FloatingPoint>(
-    _ expression1: @autoclosure () throws -> T?,
-    _ expression2: @autoclosure () throws -> T?,
-    accuracy: T,
-    _ message: @autoclosure () -> String = "",
-    file: StaticString = #filePath,
-    line: UInt = #line
-) {
-    do {
-        let lhs = try expression1()
-        let rhs = try expression2()
-        switch (lhs, rhs) {
-        case (nil, nil):
-            return
-        case let (l?, r?):
-            XCTAssertEqual(l, r, accuracy: accuracy, message(), file: file, line: line)
-        default:
-            XCTFail("XCTAssertEqual failed: (\(String(describing: lhs))) is not equal to (\(String(describing: rhs))) - \(message())", file: file, line: line)
-        }
-    } catch {
-        XCTFail("XCTAssertEqual threw unexpected error: \(error) - \(message())", file: file, line: line)
-    }
-}
-#endif

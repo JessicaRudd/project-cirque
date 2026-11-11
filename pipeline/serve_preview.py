@@ -3,30 +3,26 @@
 Project Cirque — Standalone Web Preview Harness Server (Milestones 1–3)
 Runner: pipeline/serve_preview.py
 
-Serves `web/preview.html` on port 8080, streams `data/raw/big_sky_raw.geojson`,
-and queries `data/compiled/topology.sqlite` in read-only mode (`mode=ro`) to expose:
-  - GET /                       -> web/preview.html
-  - GET /web/preview.html       -> web/preview.html
-  - GET /api/services           -> Live `mountain_services` joined with `nodes` from topology.sqlite
-  - GET /api/topology           -> Live node/edge/service counts & integrity telemetry from topology.sqlite
-  - GET /api/scenarios          -> Computed scenario paths & step telemetry from topology.sqlite + GeoJSON
+Serves `web/preview.html` on localhost, streams `data/raw/big_sky_raw.geojson`,
+and queries `data/compiled/topology.sqlite` strictly in read-only mode (`?mode=ro` + `PRAGMA query_only = ON`):
+  - GET /                             -> web/preview.html
+  - GET /web/preview.html             -> web/preview.html
   - GET /data/raw/big_sky_raw.geojson -> Raw Big Sky pistes & lifts GeoJSON
+  - GET /api/services                 -> Live `mountain_services` joined with `nodes`
+  - GET /api/topology                 -> Live node/edge/service counts from topology.sqlite
 """
 
 from __future__ import annotations
 
 import argparse
-import functools
 import http.server
 import json
 import logging
-import mimetypes
-import os
 import socketserver
 import sqlite3
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from urllib.parse import parse_qs, urlparse
 
 logging.basicConfig(
@@ -41,20 +37,43 @@ GEOJSON_PATH = REPO_ROOT / "data" / "raw" / "big_sky_raw.geojson"
 SQLITE_PATH = REPO_ROOT / "data" / "compiled" / "topology.sqlite"
 
 
-def query_mountain_services(sqlite_path: Path = SQLITE_PATH) -> List[Dict[str, Any]]:
-    """
-    Query `mountain_services` joined with `nodes` from `data/compiled/topology.sqlite`
-    using read-only SQLite URI mode (`mode=ro`).
-    """
+def _open_readonly_db(sqlite_path: Path) -> sqlite3.Connection:
     if not sqlite_path.exists():
         raise FileNotFoundError(f"Compiled SQLite database not found at {sqlite_path}")
-
-    uri = f"file:{sqlite_path.as_posix()}?mode=ro"
+    uri = f"file:{sqlite_path.resolve().as_posix()}?mode=ro"
     conn = sqlite3.connect(uri, uri=True)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA query_only = ON;")
+    return conn
+
+
+def _parse_minutes(hhmm: str) -> Optional[int]:
+    parts = hhmm.strip().split(":")
+    if len(parts) != 2:
+        return None
+    try:
+        hours, mins = int(parts[0]), int(parts[1])
+    except ValueError:
+        return None
+    if not (0 <= hours <= 23 and 0 <= mins <= 59):
+        return None
+    return hours * 60 + mins
+
+
+def _is_open_at(open_str: str, close_str: str, query_mins: int) -> bool:
+    open_mins = _parse_minutes(open_str)
+    close_mins = _parse_minutes(close_str)
+    if open_mins is None or close_mins is None:
+        return False
+    if open_mins <= close_mins:
+        return open_mins <= query_mins <= close_mins
+    return query_mins >= open_mins or query_mins <= close_mins
+
+
+def query_mountain_services(sqlite_path: Path = SQLITE_PATH) -> List[Dict[str, Any]]:
+    conn = _open_readonly_db(sqlite_path)
     try:
         cur = conn.cursor()
-        cur.execute("PRAGMA query_only = ON;")
         cur.execute(
             """
             SELECT
@@ -89,24 +108,15 @@ def query_mountain_services(sqlite_path: Path = SQLITE_PATH) -> List[Dict[str, A
                 ms.name ASC
             """
         )
-        rows = [dict(r) for r in cur.fetchall()]
-        return rows
+        return [dict(r) for r in cur.fetchall()]
     finally:
         conn.close()
 
 
 def query_topology_summary(sqlite_path: Path = SQLITE_PATH) -> Dict[str, Any]:
-    """Query aggregate counts and milestone verification stats from `topology.sqlite`."""
-    if not sqlite_path.exists():
-        return {"error": f"Missing {sqlite_path}"}
-
-    uri = f"file:{sqlite_path.as_posix()}?mode=ro"
-    conn = sqlite3.connect(uri, uri=True)
-    conn.row_factory = sqlite3.Row
+    conn = _open_readonly_db(sqlite_path)
     try:
         cur = conn.cursor()
-        cur.execute("PRAGMA query_only = ON;")
-
         total_nodes = int(cur.execute("SELECT COUNT(*) FROM nodes").fetchone()[0])
         total_edges = int(cur.execute("SELECT COUNT(*) FROM edges").fetchone()[0])
         piste_edges = int(cur.execute("SELECT COUNT(*) FROM edges WHERE type = 'piste'").fetchone()[0])
@@ -136,78 +146,88 @@ def query_topology_summary(sqlite_path: Path = SQLITE_PATH) -> Dict[str, Any]:
         conn.close()
 
 
-class CirquePreviewRequestHandler(http.server.SimpleHTTPRequestHandler):
-    """HTTP Request Handler serving `web/preview.html`, static assets, and SQLite JSON APIs."""
+class CirquePreviewRequestHandler(http.server.BaseHTTPRequestHandler):
+    """Serves only allowlisted preview assets and read-only SQLite JSON endpoints."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, directory=str(REPO_ROOT), **kwargs)
-
-    def end_headers(self) -> None:
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
-        super().end_headers()
-
-    def do_OPTIONS(self) -> None:
-        self.send_response(204)
-        self.end_headers()
+    def _send_bytes(self, body: bytes, content_type: str, status: int = 200) -> None:
+        try:
+            self.send_response(status)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store, max-age=0")
+            self.end_headers()
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
 
     def _send_json(self, payload: Any, status: int = 200) -> None:
         body = json.dumps(payload, indent=2).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        self._send_bytes(body, "application/json; charset=utf-8", status=status)
+
+    def _serve_file(self, file_path: Path, content_type: str) -> None:
+        resolved = file_path.resolve()
+        if not resolved.is_relative_to(REPO_ROOT) or not resolved.is_file():
+            self._send_json({"error": "Not found"}, status=404)
+            return
+        self._send_bytes(resolved.read_bytes(), content_type)
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         req_path = parsed.path
 
-        if req_path in ("/", "/index.html", "/preview.html", "/web", "/web/"):
-            self.path = "/web/preview.html"
-            return super().do_GET()
+        if req_path in ("/", "/index.html", "/preview.html", "/web", "/web/", "/web/preview.html"):
+            self._serve_file(WEB_PREVIEW_PATH, "text/html; charset=utf-8")
+            return
+
+        if req_path == "/data/raw/big_sky_raw.geojson":
+            self._serve_file(GEOJSON_PATH, "application/geo+json; charset=utf-8")
+            return
 
         if req_path == "/api/services":
             try:
                 services = query_mountain_services(SQLITE_PATH)
-                query_params = parse_qs(parsed.query)
-                category_filter = query_params.get("category", [None])[0]
-                time_filter = query_params.get("time", [None])[0]
+            except (FileNotFoundError, sqlite3.Error) as exc:
+                logger.error("Failed querying mountain_services: %s", exc)
+                self._send_json({"error": "Database unavailable"}, status=500)
+                return
 
-                if category_filter:
-                    services = [s for s in services if s["category"] == category_filter]
-                if time_filter:
-                    services = [
-                        s
-                        for s in services
-                        if s["open_time_local"] <= time_filter <= s["close_time_local"]
-                    ]
+            query_params = parse_qs(parsed.query)
+            category_filter = query_params.get("category", [None])[0]
+            time_filter = query_params.get("time", [None])[0]
 
-                self._send_json(
-                    {
-                        "source": "data/compiled/topology.sqlite",
-                        "table": "mountain_services",
-                        "count": len(services),
-                        "services": services,
-                    }
-                )
-            except Exception as exc:
-                logger.exception("Error querying mountain_services:")
-                self._send_json({"error": str(exc)}, status=500)
+            if category_filter:
+                services = [s for s in services if s["category"] == category_filter]
+            if time_filter:
+                query_mins = _parse_minutes(time_filter)
+                if query_mins is None:
+                    self._send_json({"error": "Invalid HH:MM time parameter"}, status=400)
+                    return
+                services = [
+                    s for s in services
+                    if _is_open_at(s["open_time_local"], s["close_time_local"], query_mins)
+                ]
+
+            self._send_json(
+                {
+                    "source": "data/compiled/topology.sqlite",
+                    "table": "mountain_services",
+                    "count": len(services),
+                    "services": services,
+                }
+            )
             return
 
         if req_path == "/api/topology":
             try:
                 summary = query_topology_summary(SQLITE_PATH)
-                self._send_json(summary)
-            except Exception as exc:
-                logger.exception("Error querying topology summary:")
-                self._send_json({"error": str(exc)}, status=500)
+            except (FileNotFoundError, sqlite3.Error) as exc:
+                logger.error("Failed querying topology summary: %s", exc)
+                self._send_json({"error": "Database unavailable"}, status=500)
+                return
+            self._send_json(summary)
             return
 
-        return super().do_GET()
+        self._send_json({"error": "Not found"}, status=404)
 
 
 class ReusableTCPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
@@ -215,28 +235,19 @@ class ReusableTCPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     daemon_threads = True
 
 
-def run_server(host: str = "0.0.0.0", port: int = 8080) -> None:
-    mimetypes.add_type("application/geo+json", ".geojson")
-    mimetypes.add_type("application/vnd.sqlite3", ".sqlite")
-
+def run_server(host: str = "127.0.0.1", port: int = 8080) -> None:
     if not WEB_PREVIEW_PATH.exists():
-        logger.warning("Preview file %s does not exist yet.", WEB_PREVIEW_PATH)
-
-    services_count = 0
-    if SQLITE_PATH.exists():
-        try:
-            services_count = len(query_mountain_services(SQLITE_PATH))
-        except Exception as exc:
-            logger.warning("SQLite pre-check warning: %s", exc)
+        raise FileNotFoundError(f"Preview file missing at {WEB_PREVIEW_PATH}")
+    services_count = len(query_mountain_services(SQLITE_PATH))
 
     server = ReusableTCPServer((host, port), CirquePreviewRequestHandler)
-    logger.info("======================================================================")
-    logger.info("Project Cirque — Milestone 1-3 Web Preview Harness")
-    logger.info("Serving web/preview.html at: http://localhost:%d", port)
-    logger.info("GeoJSON source            : %s", GEOJSON_PATH.relative_to(REPO_ROOT))
-    logger.info("SQLite topology source    : %s (%d mountain_services)", SQLITE_PATH.relative_to(REPO_ROOT), services_count)
-    logger.info("======================================================================")
-
+    logger.info(
+        "Serving %s at http://%s:%d (%d mountain_services loaded)",
+        WEB_PREVIEW_PATH.relative_to(REPO_ROOT),
+        host,
+        port,
+        services_count,
+    )
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -246,10 +257,8 @@ def run_server(host: str = "0.0.0.0", port: int = 8080) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Serve Project Cirque web/preview.html harness on port 8080."
-    )
-    parser.add_argument("--host", default="0.0.0.0", help="Bind host (default: 0.0.0.0)")
+    parser = argparse.ArgumentParser(description="Serve Project Cirque web/preview.html harness.")
+    parser.add_argument("--host", default="127.0.0.1", help="Bind host (default: 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8080, help="Bind port (default: 8080)")
     args = parser.parse_args()
 

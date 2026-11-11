@@ -13,8 +13,8 @@
     "field_failures_breakdown": {}
   },
   "latency_metrics": {
-    "mock_avg_latency_ms": 0.042,
-    "mock_p95_latency_ms": 0.181,
+    "mock_avg_latency_ms": 0.043,
+    "mock_p95_latency_ms": 0.168,
     "simulated_edge_slm_budget_ms": 450.0,
     "target_sla_met": true
   },
@@ -24,7 +24,7 @@
       "name": "Intermediate Quick Snack",
       "input": "Suggest a place for quick mid day snack and provide route appropriate for intermediate skier",
       "passed": true,
-      "latency_ms": 0.181,
+      "latency_ms": 0.168,
       "mismatches": {}
     },
     {
@@ -32,7 +32,7 @@
       "name": "Emergency Patrol Dispatch",
       "input": "Where is the nearest patrol shack? I need help, my friend crashed.",
       "passed": true,
-      "latency_ms": 0.028,
+      "latency_ms": 0.025,
       "mismatches": {}
     },
     {
@@ -40,7 +40,7 @@
       "name": "Sit-Down Warm Lunch",
       "input": "Take me to a sit down warm lunch from here sticking to groomed blue cruisers and no moguls",
       "passed": true,
-      "latency_ms": 0.024,
+      "latency_ms": 0.034,
       "mismatches": {}
     },
     {
@@ -48,7 +48,7 @@
       "name": "Fastest Route to Village (Difficulty Ceiling)",
       "input": "Find the fastest way down to Mountain Village avoiding black runs",
       "passed": true,
-      "latency_ms": 0.025,
+      "latency_ms": 0.022,
       "mismatches": {}
     },
     {
@@ -56,7 +56,7 @@
       "name": "Wind Hold / Specific Chairlift Detour",
       "input": "Navigate down to Madison Base but avoid Ramcharger and Six Shooter chairs",
       "passed": true,
-      "latency_ms": 0.026,
+      "latency_ms": 0.021,
       "mismatches": {}
     },
     {
@@ -64,7 +64,7 @@
       "name": "Warming Hut & Restroom",
       "input": "I'm freezing and need a restroom, where is the nearest warming hut?",
       "passed": true,
-      "latency_ms": 0.018,
+      "latency_ms": 0.029,
       "mismatches": {}
     },
     {
@@ -72,7 +72,7 @@
       "name": "Steep Powder & Expert Chutes",
       "input": "Lead me to the steepest double black chutes off Lone Peak",
       "passed": true,
-      "latency_ms": 0.02,
+      "latency_ms": 0.018,
       "mismatches": {}
     },
     {
@@ -80,7 +80,7 @@
       "name": "Apr\u00e8s Ski Bar",
       "input": "Time for a beer, guide me to a bar at the base",
       "passed": true,
-      "latency_ms": 0.017,
+      "latency_ms": 0.026,
       "mismatches": {}
     }
   ]

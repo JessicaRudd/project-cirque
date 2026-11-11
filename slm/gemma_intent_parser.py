@@ -11,12 +11,11 @@ from __future__ import annotations
 import json
 import logging
 import re
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Callable, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field, ValidationError
 
 logger = logging.getLogger(__name__)
 
-# Permitted types conforming strictly to Section 3.1 of TECH_SPEC.md
 POICategory = Literal[
     "quick_snack",
     "cafeteria",
@@ -68,7 +67,7 @@ OUTPUT_SCHEMA_DOC = """{
 
 
 class SkiIntent(BaseModel):
-    """Pydantic model representing structured skier intent strictly matching Section 3.1."""
+    """Structured skier routing intent conforming to Section 3.1 of TECH_SPEC.md."""
 
     target_poi_category: Optional[POICategory] = None
     target_poi_name: Optional[str] = None
@@ -93,7 +92,7 @@ def build_gemma_prompt(
     current_node_id: Optional[str] = None,
     current_time_local: str = "12:00",
 ) -> str:
-    """Builds deterministic Gemma prompt with injected context and grammar instructions."""
+    """Builds a deterministic Gemma prompt with injected location/time context and schema."""
     context = {
         "current_node_id": current_node_id,
         "current_time_local": current_time_local,
@@ -107,15 +106,12 @@ def build_gemma_prompt(
 
 
 def sanitize_model_output(raw_output: str) -> str:
-    """Strips markdown code fences (```json ... ``` or ``` ... ```) and extracts raw JSON substring."""
+    """Extracts a raw JSON object string from fenced or conversational LLM output."""
     text = raw_output.strip()
-    # Strip markdown fences if present
-    fence_pattern = r"^```(?:json)?\s*([\s\S]*?)\s*```$"
-    match = re.match(fence_pattern, text, re.IGNORECASE | re.MULTILINE)
-    if match:
-        text = match.group(1).strip()
+    fence_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text, re.IGNORECASE)
+    if fence_match:
+        text = fence_match.group(1).strip()
 
-    # If extra conversational leading/trailing characters remain, find outer brackets
     if not (text.startswith("{") and text.endswith("}")):
         start = text.find("{")
         end = text.rfind("}")
@@ -126,17 +122,23 @@ def sanitize_model_output(raw_output: str) -> str:
 
 
 class GemmaIntentParser:
-    """Parser & inference coordinator for Gemma SLM intent extraction."""
+    """Deterministic mock and custom-callback coordinator for Gemma SLM intent parsing."""
 
-    def __init__(self, mode: Literal["mock", "live"] = "mock"):
+    def __init__(
+        self,
+        mode: Literal["mock", "live"] = "mock",
+        inference_fn: Optional[Callable[[str], str]] = None,
+    ):
+        if mode == "live" and inference_fn is None:
+            raise ValueError("GemmaIntentParser(mode='live') requires an inference_fn(prompt) -> str callback.")
         self.mode = mode
+        self.inference_fn = inference_fn
 
     def _mock_inference(self, transcript: str) -> str:
-        """Deterministic mock inference returning fixture JSON for known patterns."""
+        """Deterministic rule-based fixture inference for offline CI/CD evaluation."""
         t_lower = transcript.lower()
 
-        # Emergency / ski patrol
-        if any(kw in t_lower for kw in ["patrol", "emergency", "injured", "injury", "help"]):
+        if any(kw in t_lower for kw in ["patrol", "emergency", "injured", "injury", "crashed"]):
             return json.dumps({
                 "target_poi_category": "patrol",
                 "target_poi_name": None,
@@ -148,8 +150,7 @@ class GemmaIntentParser:
                 "avoid_lifts": [],
             })
 
-        # Warming hut & restroom
-        if any(kw in t_lower for kw in ["warming hut", "warming_hut", "freezing", "restroom"]):
+        if any(kw in t_lower for kw in ["warming hut", "warming_hut", "freezing"]):
             return json.dumps({
                 "target_poi_category": "warming_hut",
                 "target_poi_name": None,
@@ -161,7 +162,18 @@ class GemmaIntentParser:
                 "avoid_lifts": [],
             })
 
-        # Après ski bar / beer
+        if any(kw in t_lower for kw in ["restroom", "bathroom"]):
+            return json.dumps({
+                "target_poi_category": "restroom",
+                "target_poi_name": None,
+                "service_speed": None,
+                "max_difficulty": "advanced",
+                "preferred_grooming": False,
+                "avoid_moguls": False,
+                "must_be_open": True,
+                "avoid_lifts": [],
+            })
+
         if any(kw in t_lower for kw in ["bar", "beer", "après", "apres", "drink"]):
             return json.dumps({
                 "target_poi_category": "bar",
@@ -174,7 +186,6 @@ class GemmaIntentParser:
                 "avoid_lifts": [],
             })
 
-        # Sit-down warm lunch / dining
         if any(kw in t_lower for kw in ["sit down", "sit-down", "lunch", "restaurant", "everett"]):
             grooming = "groomed" in t_lower or "groomer" in t_lower
             no_moguls = "no moguls" in t_lower or "avoid moguls" in t_lower
@@ -190,8 +201,20 @@ class GemmaIntentParser:
                 "avoid_lifts": [],
             })
 
-        # Quick snack / cafeteria / burger
-        if any(kw in t_lower for kw in ["snack", "burger", "grab", "quick", "cafeteria"]):
+        if "cafeteria" in t_lower and not any(kw in t_lower for kw in ["snack", "quick", "grab"]):
+            difficulty = "intermediate" if ("intermediate" in t_lower or "blue" in t_lower) else "advanced"
+            return json.dumps({
+                "target_poi_category": "cafeteria",
+                "target_poi_name": None,
+                "service_speed": "counter_service",
+                "max_difficulty": difficulty,
+                "preferred_grooming": "groomed" in t_lower,
+                "avoid_moguls": False,
+                "must_be_open": True,
+                "avoid_lifts": [],
+            })
+
+        if any(kw in t_lower for kw in ["snack", "burger", "grab", "quick"]):
             difficulty = "intermediate" if ("intermediate" in t_lower or "blue" in t_lower) else "advanced"
             return json.dumps({
                 "target_poi_category": "quick_snack",
@@ -204,7 +227,6 @@ class GemmaIntentParser:
                 "avoid_lifts": [],
             })
 
-        # Steep powder chutes / expert terrain
         if any(kw in t_lower for kw in ["steepest", "chute", "chutes", "double black", "lone peak"]):
             dest = "Lone Peak" if "lone peak" in t_lower else None
             return json.dumps({
@@ -218,7 +240,6 @@ class GemmaIntentParser:
                 "avoid_lifts": [],
             })
 
-        # Lift detour / wind hold
         if "avoid" in t_lower and ("chair" in t_lower or "lift" in t_lower):
             avoid_lifts: List[str] = []
             if "ramcharger" in t_lower:
@@ -239,7 +260,6 @@ class GemmaIntentParser:
                 "avoid_lifts": avoid_lifts,
             })
 
-        # Village / specific destination
         if "mountain village" in t_lower or "village" in t_lower:
             difficulty = "intermediate" if ("avoiding black" in t_lower or "blue" in t_lower or "easy" in t_lower) else "advanced"
             return json.dumps({
@@ -253,7 +273,6 @@ class GemmaIntentParser:
                 "avoid_lifts": [],
             })
 
-        # Default fallback intent
         return json.dumps({
             "target_poi_category": None,
             "target_poi_name": None,
@@ -265,20 +284,14 @@ class GemmaIntentParser:
             "avoid_lifts": [],
         })
 
-
-    def parse(self, raw_output: str, fallback_transcript: Optional[str] = None) -> SkiIntent:
-        """Parses raw model output into a validated SkiIntent.
-
-        Sanitizes markdown fences, handles JSON decode errors, and validates against
-        Pydantic SkiIntent. If validation fails, safely recovers with conservative defaults.
-        """
+    def parse(self, raw_output: str) -> SkiIntent:
+        """Sanitizes and validates raw model output against SkiIntent, falling back to safe defaults on malformed JSON."""
         sanitized = sanitize_model_output(raw_output)
         try:
             parsed_json = json.loads(sanitized)
             return SkiIntent.model_validate(parsed_json)
-        except (json.JSONDecodeError, ValidationError) as e:
-            logger.warning("Failed to validate model output: %s. Output was: %r", e, raw_output)
-            # Defensive fallback
+        except (json.JSONDecodeError, ValidationError) as exc:
+            logger.warning("Failed to validate model output (%s); falling back to safe defaults: %r", exc, raw_output)
             return SkiIntent()
 
     def process_transcript(
@@ -287,14 +300,13 @@ class GemmaIntentParser:
         current_node_id: Optional[str] = None,
         current_time_local: str = "12:00",
     ) -> SkiIntent:
-        """Full end-to-end intent extraction from user transcript."""
+        """Executes end-to-end intent extraction from a skier audio transcript."""
         if self.mode == "mock":
-            mock_output = self._mock_inference(transcript)
-            return self.parse(mock_output, fallback_transcript=transcript)
+            return self.parse(self._mock_inference(transcript))
 
-        # In live mode, prompt would be passed to on-device runtime (llama.cpp / Core ML)
         prompt = build_gemma_prompt(transcript, current_node_id, current_time_local)
-        raise NotImplementedError("Live Gemma engine requires model weights or edge runtime.")
+        assert self.inference_fn is not None
+        return self.parse(self.inference_fn(prompt))
 
 
 def export_intent_json_schema() -> Dict[str, Any]:

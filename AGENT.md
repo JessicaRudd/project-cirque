@@ -4,7 +4,7 @@
 Project Cirque is an asymmetric, offline-first spatial intelligence ski concierge operating in Airplane Mode on-mountain:
 - **Cloud Compilation Plane:** Google Cloud Run (`cirque-compiler`, `cirque-api`, `telemetry-sync`) + AlloyDB (PostGIS/pgRouting) + Cloud Storage + Cloud CDN.
 - **Edge Execution Runtime:** iOS 18+ / Swift 6 / Core ML quantized Gemma 2B/4B / Embedded C-SQLite3 / SiriKit AppIntents.
-- **Target Testbed:** Big Sky Resort, Montana (`bbox: [45.23, -111.47, 45.32, -111.34]`).
+- **Target Testbed:** Big Sky Resort, Montana (`bbox: [45.205, -111.490, 45.340, -111.315]`).
 
 ---
 
@@ -74,18 +74,17 @@ Never use the following filler words, phrases, or rhetorical crutches:
 ## 5. Toolchain Shortcuts & Environment Cheat Sheet
 
 To save tokens and execution time:
-- **Swift 6 Toolchain:** Installed at `/tmp/swift/usr/bin/swift`.
+- **Swift 6 Toolchain (Linux VM):** Bootstrap idempotently into `/tmp/swift` via `./scripts/bootstrap_swift_linux.sh` (installs Swift 6.0.3 and registers `CSQLite` in `/tmp/swift/usr/lib/swift/linux/module.modulemap`).
   - Compile & test command:
     ```bash
     PATH="/tmp/swift/usr/bin:$PATH" swift test --package-path ios/CirqueCore --filter <TestClass>
     ```
-  - Linux `CSQLite` module map is configured at `/tmp/swift/usr/lib/swift/linux/module.modulemap`.
-  - In Linux XCTest, `XCTAssertEqual` with optional floating points requires the `#if !canImport(ObjectiveC)` overload.
-- **Python Toolchain:** Python 3.11 with pre-installed `shapely`, `geopandas`, `pytest`.
-  - Run pipeline tests: `pytest tests/pipeline/test_<module>.py -v`
-  - Run SLM tests: `pytest tests/slm/test_<module>.py -v`
+  - Shared XCTest helpers (`assertOptionalDoubleEqual`, temporary SQLite copy helpers) live in `ios/CirqueCore/Tests/CirqueCoreTests/TestSupport.swift`.
+- **Python Toolchain:** Run `pytest` deterministically via `uv` against `requirements.txt` (`shapely`, `pydantic`, `pytest`):
+  - Run full suite: `uv run --with-requirements requirements.txt pytest -v`
+  - Run targeted module: `uv run --with-requirements requirements.txt pytest tests/pipeline/test_<module>.py -v`
 - **Database CLI:**
-  - Direct read queries: `sqlite3 data/compiled/topology.sqlite "SELECT ... LIMIT 10;"`
+  - Direct read-only queries: `sqlite3 "file:data/compiled/topology.sqlite?mode=ro" "SELECT ... LIMIT 10;"`
 
 ---
 
