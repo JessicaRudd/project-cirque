@@ -252,21 +252,50 @@ public final class CirqueGraphSolver {
     // MARK: - Properties
 
     public let database: CirqueDatabase
+    public let overlayManager: DynamicOverlayManager?
 
-    /// Initializes the Dijkstra graph solver with an active `CirqueDatabase` connection.
-    public init(database: CirqueDatabase) {
+    /// Initializes the Dijkstra graph solver with an active `CirqueDatabase` connection
+    /// and an optional thread-safe `DynamicOverlayManager` for live lift/trail overrides.
+    public init(
+        database: CirqueDatabase,
+        overlayManager: DynamicOverlayManager? = nil
+    ) {
         self.database = database
+        self.overlayManager = overlayManager
     }
 
     // MARK: - Multi-Criteria Edge Cost Evaluation
 
-    /// Evaluates the effective traversal cost (in weighted seconds) of a directed edge under `query`.
-    /// - Returns: Weighted cost in seconds, or `nil` if the edge violates the skier's hard `maxDifficulty` ceiling.
+    /// Evaluates the effective traversal cost (in weighted seconds) of a directed edge under `query`,
+    /// automatically consulting `overlayManager` for active real-time status or grooming overrides.
+    /// - Returns: Weighted cost in seconds, or `nil` if the edge is closed/on-hold or violates `query.maxDifficulty`.
     public func calculateCost(edge: EdgeRecord, query: RouteQuery) -> Double? {
+        let activeOverlay = overlayManager?.getOverlay(forEdgeId: edge.edgeId)
+        return calculateCost(edge: edge, overlay: activeOverlay, query: query)
+    }
+
+    /// Evaluates the effective traversal cost (in weighted seconds) of a directed edge given an explicit `DynamicStatusOverlay`.
+    /// - Returns: Weighted cost in seconds, or `nil` if `overlay.status` is non-open (`.closedPatrol`, `.windHold`, `.mechanicalHold`)
+    ///   or if the edge violates the skier's hard `maxDifficulty` ceiling.
+    public func calculateCost(
+        edge: EdgeRecord,
+        overlay: DynamicStatusOverlay?,
+        query: RouteQuery
+    ) -> Double? {
+        // 1. Dynamic Status Hard Exclusion: Never route across patrol-closed, wind-held, or mechanically held edges.
+        if let status = overlay?.status {
+            switch status {
+            case .closedPatrol, .windHold, .mechanicalHold:
+                return nil
+            case .open:
+                break
+            }
+        }
+
         let type = edge.edgeType
         let difficulty = type == .lift ? .lift : edge.skiDifficulty
 
-        // 1. Hard Difficulty Cutoff: Never route a skier onto a piste exceeding their declared skill ceiling.
+        // 2. Hard Difficulty Cutoff: Never route a skier onto a piste exceeding their declared skill ceiling.
         if type == .piste && difficulty > query.maxDifficulty {
             return nil
         }
@@ -275,17 +304,19 @@ public final class CirqueGraphSolver {
         let baseCost = max(0.0, edge.baseCostSeconds)
         var multiplier: Double = 1.0
 
-        // 2. Soft Preference Multipliers (applied to downhill ski pistes)
+        // 3. Soft Preference Multipliers (applied to downhill ski pistes, respecting dynamic grooming overrides)
         if type == .piste {
+            let effectiveGrooming: GroomingType? = overlay?.effectiveGrooming?.groomingType ?? edge.groomingType
+
             if query.preferGroomed {
-                if edge.groomingType == .groomed {
+                if effectiveGrooming == .groomed {
                     multiplier *= Self.groomedBonusMultiplier
-                } else if let grooming = edge.groomingType, grooming.isUngroomedBackcountry {
+                } else if let grooming = effectiveGrooming, grooming.isUngroomedBackcountry {
                     multiplier *= Self.ungroomedPenaltyMultiplier
                 }
             }
 
-            if query.avoidMoguls, let grooming = edge.groomingType, grooming.isMogul {
+            if query.avoidMoguls, let grooming = effectiveGrooming, grooming.isMogul {
                 multiplier *= Self.mogulAvoidancePenaltyMultiplier
             }
         }

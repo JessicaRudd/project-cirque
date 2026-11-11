@@ -1,0 +1,27 @@
+================================================================================
+PROJECT CIRQUE — M3_MOBILE_ROUTING_CORE (STEP 3.3)
+Dynamic Wind-Hold Reroute Trace & Telemetry Overlay Benchmark
+Origin: village_mountain_village (2,286m) -> Target: everetts_8800 (2,682m)
+================================================================================
+
+1. BASELINE ROUTE (0 Active Overlays)
+   - Path Selected      : [lift_ramcharger]
+   - Step 1             : Take Ramcharger 8 to Everett's 8800 (Andesite Mountain Summit) to arrive at your destination.
+   - Weighted Cost      : 240.0s (4m 00s direct high-speed 8-pack)
+   - SQLite Mode        : PRAGMA query_only = ON (Immutable)
+
+2. DYNAMIC DELTA INJECTION (Ramcharger 8 -> .windHold)
+   - Event              : overlayManager.setStatus(edgeId: "lift_ramcharger", status: .windHold, grooming: nil)
+   - Ramcharger 8 Cost  : nil (Hard Exclusion triggered in CirqueGraphSolver.calculateCost)
+   - Rerouted Path      : [lift_swift_current, trail_andesite_connector]
+   - Step 1             : Take Swift Current 6 to Swift Current 6 Summit (Lone Mountain Bowl).
+   - Step 2             : Turn onto Pacifier / Andesite Connector (intermediate blue) and descend 129 meters to Everett's 8800 (Andesite Mountain Summit).
+   - Weighted Cost      : 540.0s (420.0s lift + 150.0s * 0.8 groomed connector)
+   - Reroute Latency    : 0.0920 ms single-shot | 0.0307 ms 100-iteration mean (Budget: < 5.00 ms)
+
+3. LIFT REOPENED RESTORATION (Ramcharger 8 -> .open)
+   - Event              : overlayManager.setStatus(edgeId: "lift_ramcharger", status: .open, grooming: nil)
+   - Restored Path      : [lift_ramcharger]
+   - Weighted Cost      : 240.0s (Immediate reversion to Path A)
+   - SQLite Mutations   : 0 writes (100% ephemeral RAM state)
+================================================================================
